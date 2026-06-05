@@ -1,0 +1,783 @@
+// Ivory Dental Suite — database schema.
+//
+// Models the full mock domain currently held in lib/*.ts (in-memory singletons):
+//   • Clinic      — providers, patients, dental charts, appointments,
+//                   prescriptions, visits, invoices, payments, locations, leave
+//   • Inventory   — suppliers, products, per-location stock, movements, orders
+//   • Procurement — vendors, GST registrations, RFQs, quotes, purchase orders,
+//                   goods receipts, invites
+//   • Tax/GST     — compliance ledger + audit trail, GSTR-1 locks, electronic
+//                   cash & credit ledgers, RCM inward supplies, job-work challans
+//
+// MONEY CONVENTION (carried over from the app): all amounts are stored in USD
+// base and converted at display time. Stored as Float to mirror the JS numbers
+// the app uses today; switch to Decimal if exact currency math is later needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Postgres is assumed because the schema uses scalar lists (String[]) and
+  // native enums. Set DATABASE_URL in your environment / .env.
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Gender {
+  M
+  F
+  Other
+}
+
+enum ApptType {
+  IN_CLINIC @map("in-clinic")
+  VIDEO     @map("video")
+  PHONE     @map("phone")
+}
+
+enum ApptStatus {
+  BOOKED     @map("booked")
+  ARRIVED    @map("arrived")
+  IN_CONSULT @map("in-consult")
+  COMPLETED  @map("completed")
+  NO_SHOW    @map("no-show")
+}
+
+enum ToothStatus {
+  HEALTHY @map("healthy")
+  CARIES  @map("caries")
+  FILLED  @map("filled")
+  CROWN   @map("crown")
+  RCT     @map("rct")
+  MISSING @map("missing")
+  IMPLANT @map("implant")
+}
+
+enum TreatmentStatus {
+  PLANNED     @map("planned")
+  IN_PROGRESS @map("in-progress")
+  DONE        @map("done")
+}
+
+enum InvoiceStatus {
+  PAID    @map("paid")
+  DUE     @map("due")
+  PARTIAL @map("partial")
+}
+
+enum PayMode {
+  CASH   @map("cash")
+  CARD   @map("card")
+  UPI    @map("upi")
+  ONLINE @map("online")
+}
+
+enum MovementType {
+  IN       @map("in")
+  OUT      @map("out")
+  TRANSFER @map("transfer")
+  WRITEOFF @map("writeoff")
+}
+
+enum OrderType {
+  PURCHASE @map("purchase")
+  SALES    @map("sales")
+}
+
+enum OrderStatus {
+  DRAFT     @map("draft")
+  OPEN      @map("open")
+  SHIPPED   @map("shipped")
+  RECEIVED  @map("received")
+  CANCELLED @map("cancelled")
+}
+
+enum VendorCategory {
+  CONSUMABLES     @map("Consumables")
+  EQUIPMENT       @map("Equipment")
+  INSTRUMENTS     @map("Instruments")
+  LAB_SERVICES    @map("Lab Services")
+  PHARMACY        @map("Pharmacy")
+  OFFICE_SUPPLIES @map("Office Supplies")
+}
+
+enum Channel {
+  EMAIL @map("email")
+  SMS   @map("sms")
+  BOTH  @map("both")
+}
+
+enum RfqStatus {
+  DRAFT   @map("draft")
+  SENT    @map("sent")
+  QUOTED  @map("quoted")
+  AWARDED @map("awarded")
+}
+
+enum POStatus {
+  ISSUED   @map("issued")
+  PARTIAL  @map("partial")
+  RECEIVED @map("received")
+  INVOICED @map("invoiced")
+  PAID     @map("paid")
+  CLOSED   @map("closed")
+}
+
+enum POPayMode {
+  BANK   @map("bank")
+  UPI    @map("upi")
+  CARD   @map("card")
+  CHEQUE @map("cheque")
+  CASH   @map("cash")
+}
+
+enum InviteStatus {
+  PENDING    @map("pending")
+  REGISTERED @map("registered")
+}
+
+enum CashEntryKind {
+  DEPOSIT    @map("deposit")
+  SETTLEMENT @map("settlement")
+}
+
+enum CreditEntryKind {
+  ACCRUAL     @map("accrual")
+  UTILISATION @map("utilisation")
+}
+
+enum JobWorkStatus {
+  SENT     @map("sent")
+  RECEIVED @map("received")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Clinic — locations, providers, patients & the clinical record
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Location {
+  id        String  @id // stable branch key == name in the app
+  name      String
+  address   String
+  city      String
+  phone     String
+  email     String
+  gstin     String
+  lead      String // lead dentist (free-text name)
+  chairs    Int     @default(1)
+  openHours String
+  active    Boolean @default(true)
+
+  patients Patient[]
+}
+
+model Provider {
+  id        String @id @default(cuid())
+  name      String
+  specialty String
+  reg       String // registration / council number
+  color     String // hsl chart hue index "1".."5"
+
+  appointments  Appointment[]
+  prescriptions Prescription[]
+  visits        Visit[]
+  timeOff       TimeOff[]
+}
+
+model Patient {
+  id          String   @id @default(cuid())
+  name        String
+  dob         String // YYYY-MM-DD
+  anniversary String? // wedding anniversary YYYY-MM-DD
+  gender      Gender   @default(Other)
+  phone       String
+  email       String
+  bloodGroup  String
+  abhaId      String?
+  gstin       String? // set for corporate / insurer (B2B) patients
+  allergies   String[]
+  conditions  String[]
+  balance     Float    @default(0) // USD outstanding
+  lastVisit   String // ISO
+  emoji       String   @default("🧑")
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id])
+
+  toothFindings ToothFinding[]
+  treatmentPlan TreatmentItem[]
+  xrays         XrayImage[]
+  appointments  Appointment[]
+  prescriptions Prescription[]
+  visits        Visit[]
+  invoices      Invoice[]
+
+  @@index([locationId])
+}
+
+// Per-tooth chart finding (FDI numbering). Replaces Patient.toothFindings map.
+model ToothFinding {
+  id        String      @id @default(cuid())
+  patientId String
+  patient   Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tooth     Int // FDI number
+  status    ToothStatus
+
+  @@unique([patientId, tooth])
+}
+
+model TreatmentItem {
+  id        String          @id @default(cuid())
+  patientId String
+  patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tooth     Int? // null = not tooth-specific
+  procedure String
+  phase     Int             @default(1)
+  estimate  Float // USD
+  status    TreatmentStatus @default(PLANNED)
+  billed    Boolean         @default(false) // hidden from the chart once invoiced
+
+  @@index([patientId])
+}
+
+model XrayImage {
+  id        String  @id @default(cuid())
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name      String
+  dataUrl   String // base64 data URL (no real blob storage in the mock)
+  date      String
+  tooth     Int?
+  note      String?
+
+  @@index([patientId])
+}
+
+model Appointment {
+  id          String     @id @default(cuid())
+  patientId   String
+  patient     Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId  String
+  provider    Provider   @relation(fields: [providerId], references: [id])
+  start       String // ISO
+  durationMin Int        @default(30)
+  type        ApptType   @default(IN_CLINIC)
+  status      ApptStatus @default(BOOKED)
+  reason      String
+  chair       String
+
+  @@index([patientId])
+  @@index([providerId])
+}
+
+model Prescription {
+  id            String             @id @default(cuid())
+  patientId     String
+  patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId    String
+  provider      Provider           @relation(fields: [providerId], references: [id])
+  date          String
+  advice        String[] // free-text bullet advice
+  patientName   String? // display override; defaults to patient name
+  prescriberName String? // display override; defaults to provider name
+  signName      String? // display override; defaults to prescriber name
+
+  items    PrescriptionItem[]
+  invoices Invoice[] // invoices that bundle this Rx (Invoice.rxId)
+
+  @@index([patientId])
+  @@index([providerId])
+}
+
+model PrescriptionItem {
+  id             String       @id @default(cuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  drug           String
+  dosage         String
+  frequency      String
+  duration       String
+  notes          String?
+
+  @@index([prescriptionId])
+}
+
+model Visit {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id])
+  date       String
+  complaint  String
+  notes      String
+
+  @@index([patientId])
+  @@index([providerId])
+}
+
+model Invoice {
+  id        String        @id // e.g. INV-2001 (app-assigned, sequential)
+  patientId String
+  patient   Patient       @relation(fields: [patientId], references: [id])
+  date      String
+  total     Float // USD
+  status    InvoiceStatus @default(DUE)
+  mode      PayMode       @default(CASH)
+  rxId      String? // linked prescription, for combined invoice + Rx print
+  rx        Prescription? @relation(fields: [rxId], references: [id])
+
+  items    InvoiceItem[]
+  payments Payment[]
+
+  @@index([patientId])
+  @@index([rxId])
+}
+
+model InvoiceItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  desc      String
+  amount    Float // USD
+
+  @@index([invoiceId])
+}
+
+model Payment {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Float // USD
+  mode      PayMode
+  reference String?
+  date      String
+
+  @@index([invoiceId])
+}
+
+// Doctor leave / calendar block. Whole-day unless startTime/endTime are set.
+model TimeOff {
+  id         String   @id @default(cuid())
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  from       String // YYYY-MM-DD, inclusive
+  to         String // YYYY-MM-DD, inclusive
+  reason     String
+  startTime  String? // HH:MM — partial-day block
+  endTime    String?
+
+  @@index([providerId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inventory — suppliers, products, stock, movements, orders
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Supplier {
+  id           String    @id @default(cuid())
+  name         String
+  contact      String
+  email        String
+  leadTimeDays Int
+  rating       Int // 1-5
+  products     Product[]
+}
+
+model Product {
+  id           String  @id @default(cuid())
+  name         String
+  sku          String
+  category     String
+  stock        Int     @default(0) // total across all locations (cache of stockByLocation)
+  reorderPoint Int     @default(10)
+  cost         Float
+  price        Float
+  location     String // primary warehouse name
+  emoji        String  @default("📦")
+
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  stockByLocation ProductStock[]
+  movements       Movement[]
+  orderLines      OrderLine[]
+
+  @@index([supplierId])
+}
+
+// Quantity of a product held at one warehouse/location.
+model ProductStock {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location  String // warehouse name
+  qty       Int     @default(0)
+
+  @@unique([productId, location])
+}
+
+model Movement {
+  id        String       @id @default(cuid())
+  productId String
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      MovementType
+  qty       Int
+  ref       String
+  date      String // ISO
+
+  @@index([productId])
+}
+
+// Purchase or sales order from the inventory module (distinct from procurement
+// PurchaseOrder, which is the vendor-portal flow).
+model Order {
+  id      String      @id // e.g. PO-1043 / SO-9921
+  type    OrderType
+  partyId String // supplierId for purchase, customer id for sales (not FK'd)
+  party   String // party display name
+  status  OrderStatus
+  total   Float
+  date    String
+
+  lines OrderLine[]
+}
+
+model OrderLine {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  qty       Int
+  unitPrice Float
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Procurement — vendors, RFQs, quotes, purchase orders, goods receipts
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Vendor {
+  id       String         @id @default(cuid())
+  name     String
+  category VendorCategory @default(CONSUMABLES)
+  contact  String
+  email    String
+  phone    String
+  city     String
+  gstin    String // mirrors the primary registration
+  pan      String?
+  rating   Int            @default(4) // 1-5
+  active   Boolean        @default(true)
+  msme     Boolean        @default(false)
+  udyam    String? // Udyam Registration Number
+  token    String         @unique // key for the public self-service portal link
+
+  // Banking (inlined — one set of remittance details per vendor)
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankIfsc          String?
+  bankName          String?
+  bankBranch        String?
+
+  // TDS deducted on payments to this vendor (Form 26Q)
+  tdsSection String?
+  tdsRate    Float?
+
+  registrations  GstRegistration[]
+  quotes         Quote[]
+  purchaseOrders PurchaseOrder[]
+  invitedToRfqs  Rfq[]             @relation("RfqInvitedVendors")
+  awards         RfqAward[]
+  invite         VendorInvite?
+}
+
+// One GST registration held by a vendor (a party may hold several — one per state).
+model GstRegistration {
+  id            String  @id @default(cuid())
+  vendorId      String
+  vendor        Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  gstin         String
+  pan           String
+  tradeName     String
+  legalName     String?
+  label         String // e.g. "Head Office", "Mumbai depot"
+  stateCode     String
+  address1      String
+  address2      String
+  city          String
+  state         String
+  pincode       String
+  primary       Boolean @default(false)
+  taxpayerType  String? // Regular / SEZ Unit / ISD / Composition
+  taxpayerStatus String? // Active / Cancelled
+
+  @@index([vendorId])
+}
+
+// Self-registration invite — a prospective vendor opens the link & registers.
+model VendorInvite {
+  token     String       @id // e.g. vreg-xxxxxxxx
+  email     String?
+  phone     String?
+  note      String?
+  createdAt String
+  status    InviteStatus @default(PENDING)
+  vendorId  String?      @unique
+  vendor    Vendor?      @relation(fields: [vendorId], references: [id])
+}
+
+model Rfq {
+  id              String     @id // e.g. RFQ-1042
+  title           String
+  category        VendorCategory
+  createdAt       String
+  status          RfqStatus  @default(DRAFT)
+  channel         Channel    @default(EMAIL)
+  notes           String?
+  awardedVendorId String? // first/sole awarded vendor (mirror of awards)
+  poId            String? // first/sole resulting PO (mirror of awards)
+
+  items          RfqItem[]
+  quotes         Quote[]
+  awards         RfqAward[]
+  invitedVendors Vendor[]   @relation("RfqInvitedVendors")
+}
+
+model RfqItem {
+  id    String @id @default(cuid())
+  rfqId String
+  rfq   Rfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  name  String
+  qty   Float
+  unit  String
+
+  @@index([rfqId])
+}
+
+model Quote {
+  id           String      @id @default(cuid())
+  rfqId        String
+  rfq          Rfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendorId     String
+  vendor       Vendor      @relation(fields: [vendorId], references: [id])
+  submittedAt  String
+  total        Float // USD
+  leadTimeDays Int
+  validityDays Int
+  notes        String?
+
+  lines QuoteLine[]
+
+  @@index([rfqId])
+  @@index([vendorId])
+}
+
+model QuoteLine {
+  id        String @id @default(cuid())
+  quoteId   String
+  quote     Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  itemName  String
+  qty       Float
+  unitPrice Float // USD
+
+  @@index([quoteId])
+}
+
+// A split/partial award row: which vendor won, and the PO it produced.
+model RfqAward {
+  id       String        @id @default(cuid())
+  rfqId    String
+  rfq      Rfq           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendorId String
+  vendor   Vendor        @relation(fields: [vendorId], references: [id])
+  poId     String
+  po       PurchaseOrder @relation(fields: [poId], references: [id])
+
+  @@index([rfqId])
+  @@index([vendorId])
+}
+
+model PurchaseOrder {
+  id       String   @id // e.g. PO-1001
+  rfqId    String? // absent for manual / direct purchases
+  rfqTitle String // doubles as the PO title
+  vendorId String
+  vendor   Vendor   @relation(fields: [vendorId], references: [id])
+  date     String
+  total    Float // USD
+  status   POStatus @default(ISSUED)
+  manual   Boolean  @default(false) // recorded directly, bypassing RFQ→PO
+
+  // Single vendor invoice (inlined — a PO carries at most one)
+  invoiceNumber String?
+  invoiceDate   String?
+  invoiceAmount Float?
+
+  // Single payment (inlined)
+  paymentDate      String?
+  paymentMode      POPayMode?
+  paymentReference String?
+  paymentAmount    Float?
+
+  closedReason String?
+
+  items    POItem[]
+  receipts  GoodsReceipt[]
+  awards   RfqAward[]
+
+  @@index([vendorId])
+  @@index([rfqId])
+}
+
+// Ordered line on a purchase order (mirrors a QuoteLine).
+model POItem {
+  id        String        @id @default(cuid())
+  poId      String
+  po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  itemName  String
+  qty       Float
+  unitPrice Float // USD
+
+  @@index([poId])
+}
+
+// Goods Receipt Note — one delivery event against a PO (a PO may have several).
+model GoodsReceipt {
+  id    String        @id @default(cuid())
+  poId  String
+  po    PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  date  String
+  note  String?
+  lines GoodsReceiptLine[]
+
+  @@index([poId])
+}
+
+model GoodsReceiptLine {
+  id        String       @id @default(cuid())
+  receiptId String
+  receipt   GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  itemName  String
+  qty       Float // billable units (count toward the ordered balance)
+  free      Float        @default(0) // bonus units — stocked but not billed
+
+  @@index([receiptId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tax / GST — compliance ledger, period locks, cash & credit ledgers, RCM, ITC-04
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Per-document compliance state. The id is the document key the app uses, which
+// may be a plain doc id (INV-2001, PO-1001) or a prefixed key for the TDS sub-
+// ledgers (tdsp:PO-1003 = TDS payable, tdsr:INV-2001 = TDS receivable). Because
+// the key is polymorphic, it is not a foreign key.
+model ComplianceRecord {
+  id           String  @id
+  gstr1Filed   Boolean @default(false)
+  gstr1Ref     String? // GSTR-1 ARN / return ref
+  gstr1Period  String? // return period reported in (YYYY-MM)
+  gstr1Held    Boolean @default(false) // deliberately excluded from GSTR-1
+  itcClaimed   Boolean @default(false)
+  itcRef       String? // GSTR-3B ref
+  itcPeriod    String? // GSTR-3B period ITC claimed in (YYYY-MM)
+  itcHeld      Boolean @default(false) // deliberately not claimed
+  tdsDeposited Boolean @default(false)
+  challanNo    String? // CIN of the TDS deposit challan
+  tdsCertified Boolean @default(false)
+  certNo       String? // Form 16A certificate number
+
+  trail ComplianceTrailEvent[]
+}
+
+model ComplianceTrailEvent {
+  id       String           @id @default(cuid())
+  recordId String
+  record   ComplianceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  ts       String
+  event    String
+  ref      String?
+
+  @@index([recordId])
+}
+
+// Period-level GSTR-1 filing & lock.
+model Gstr1Filing {
+  period String @id // YYYY-MM
+  date   String
+}
+
+// Electronic Cash Ledger entry (signed per head: deposits +, settlements −).
+model CashLedgerEntry {
+  id     String        @id @default(cuid())
+  date   String
+  kind   CashEntryKind
+  ref    String? // challan CIN (deposit) or return period (settlement)
+  period String? // settlement return period
+  igst   Float         @default(0)
+  cgst   Float         @default(0)
+  sgst   Float         @default(0)
+}
+
+// A filed & locked GSTR-3B return (cash paid per head for the period).
+model FiledReturn3B {
+  period String @id // YYYY-MM
+  igst   Float
+  cgst   Float
+  sgst   Float
+  date   String
+}
+
+// Electronic Credit (ITC) Ledger entry (signed: accrual +, utilisation −).
+model CreditLedgerEntry {
+  id     String          @id @default(cuid())
+  date   String
+  kind   CreditEntryKind
+  ref    String? // return period or note
+  period String?
+  igst   Float           @default(0)
+  cgst   Float           @default(0)
+  sgst   Float           @default(0)
+}
+
+// Reverse-charge (RCM) inward supply — the clinic self-pays GST.
+model RcmInwardSupply {
+  id         String  @id @default(cuid())
+  date       String
+  period     String // YYYY-MM
+  fy         String
+  supplier   String
+  desc       String
+  code       String // HSN/SAC
+  rate       Float // GST %
+  taxable    Float
+  cgst       Float   @default(0)
+  sgst       Float   @default(0)
+  igst       Float   @default(0)
+  tax        Float
+  interState Boolean @default(false)
+}
+
+// ITC-04 job-work challan — materials sent to / prosthetics received from a lab.
+model JobWorkChallan {
+  challanNo    String        @id
+  date         String
+  period       String // YYYY-MM
+  fy           String
+  jobWorker    String
+  itemSent     String
+  qtySent      Float
+  itemReceived String
+  qtyReceived  Float
+  status       JobWorkStatus
+  taxableValue Float
+}
