@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 24% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 24% 12%;
+
+    --muted: 220 16% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --secondary: 220 16% 96%;
+    --secondary-foreground: 222 24% 18%;
+
+    --accent: 220 16% 95%;
+    --accent-foreground: 222 24% 18%;
+
+    --border: 220 14% 90%;
+    --input: 220 14% 90%;
+
+    /* Themeable accent — overwritten live by the Color Studio */
+    --primary: 222 75% 55%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 222 75% 55%;
+
+    --success: 142 62% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 38 60% 12%;
+    --danger: 0 72% 51%;
+    --danger-foreground: 0 0% 100%;
+
+    /* Chart series — derived from --primary by the theme engine */
+    --chart-1: 222 75% 55%;
+    --chart-2: 252 75% 60%;
+    --chart-3: 192 75% 50%;
+    --chart-4: 282 70% 60%;
+    --chart-5: 162 70% 45%;
+
+    --radius: 0.75rem;
+
+    /* Default app font — overwritten live by the font picker */
+    --font-sans: var(--font-inter);
+  }
+
+  .dark {
+    --background: 224 28% 8%;
+    --foreground: 220 20% 96%;
+
+    --card: 224 26% 11%;
+    --card-foreground: 220 20% 96%;
+
+    --muted: 223 22% 16%;
+    --muted-foreground: 220 12% 62%;
+
+    --secondary: 223 22% 16%;
+    --secondary-foreground: 220 20% 92%;
+
+    --accent: 223 22% 18%;
+    --accent-foreground: 220 20% 92%;
+
+    --border: 223 20% 20%;
+    --input: 223 20% 22%;
+
+    --primary: 222 75% 60%;
+    --primary-foreground: 224 28% 8%;
+    --ring: 222 75% 60%;
+
+    --success: 142 55% 48%;
+    --success-foreground: 142 40% 8%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 38 60% 10%;
+    --danger: 0 72% 58%;
+    --danger-foreground: 0 0% 100%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Smooth repaint when the palette changes */
+  html.theme-transition,
+  html.theme-transition * {
+    transition: background-color 0.4s ease, border-color 0.4s ease,
+      color 0.4s ease, fill 0.4s ease, stroke 0.4s ease;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* 3D flip card */
+  .flip {
+    perspective: 1200px;
+  }
+  .flip-inner {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .flip-inner.is-flipped {
+    transform: rotateY(180deg);
+  }
+  .flip-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .flip-back {
+    transform: rotateY(180deg);
+  }
+
+  .studio-range {
+    box-shadow: inset 0 0 0 1px hsl(var(--border));
+  }
+  .studio-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid hsl(var(--foreground) / 0.7);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+    cursor: pointer;
+  }
+  .studio-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid hsl(var(--foreground) / 0.7);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+    cursor: pointer;
+  }
+}
