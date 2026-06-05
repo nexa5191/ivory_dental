@@ -14,12 +14,11 @@
 // the app uses today; switch to Decimal if exact currency math is later needed.
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
 }
 
 datasource db {
-  // Postgres is assumed because the schema uses scalar lists (String[]) and
-  // native enums. Set DATABASE_URL in your environment / .env.
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
@@ -177,7 +176,7 @@ model Location {
 }
 
 model Provider {
-  id        String @id @default(cuid())
+  id        Int    @id @default(autoincrement())
   name      String
   specialty String
   reg       String // registration / council number
@@ -190,7 +189,7 @@ model Provider {
 }
 
 model Patient {
-  id          String   @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   name        String
   dob         String // YYYY-MM-DD
   anniversary String? // wedding anniversary YYYY-MM-DD
@@ -204,7 +203,6 @@ model Patient {
   conditions  String[]
   balance     Float    @default(0) // USD outstanding
   lastVisit   String // ISO
-  emoji       String   @default("🧑")
 
   locationId String?
   location   Location? @relation(fields: [locationId], references: [id])
@@ -222,8 +220,8 @@ model Patient {
 
 // Per-tooth chart finding (FDI numbering). Replaces Patient.toothFindings map.
 model ToothFinding {
-  id        String      @id @default(cuid())
-  patientId String
+  id        Int         @id @default(autoincrement())
+  patientId Int
   patient   Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
   tooth     Int // FDI number
   status    ToothStatus
@@ -232,8 +230,8 @@ model ToothFinding {
 }
 
 model TreatmentItem {
-  id        String          @id @default(cuid())
-  patientId String
+  id        Int             @id @default(autoincrement())
+  patientId Int
   patient   Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
   tooth     Int? // null = not tooth-specific
   procedure String
@@ -246,8 +244,8 @@ model TreatmentItem {
 }
 
 model XrayImage {
-  id        String  @id @default(cuid())
-  patientId String
+  id        Int     @id @default(autoincrement())
+  patientId Int
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   name      String
   dataUrl   String // base64 data URL (no real blob storage in the mock)
@@ -259,10 +257,10 @@ model XrayImage {
 }
 
 model Appointment {
-  id          String     @id @default(cuid())
-  patientId   String
+  id          Int        @id @default(autoincrement())
+  patientId   Int
   patient     Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  providerId  String
+  providerId  Int
   provider    Provider   @relation(fields: [providerId], references: [id])
   start       String // ISO
   durationMin Int        @default(30)
@@ -276,16 +274,16 @@ model Appointment {
 }
 
 model Prescription {
-  id            String             @id @default(cuid())
-  patientId     String
-  patient       Patient            @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  providerId    String
-  provider      Provider           @relation(fields: [providerId], references: [id])
-  date          String
-  advice        String[] // free-text bullet advice
-  patientName   String? // display override; defaults to patient name
+  id             Int      @id @default(autoincrement())
+  patientId      Int
+  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId     Int
+  provider       Provider @relation(fields: [providerId], references: [id])
+  date           String
+  advice         String[] // free-text bullet advice
+  patientName    String? // display override; defaults to patient name
   prescriberName String? // display override; defaults to provider name
-  signName      String? // display override; defaults to prescriber name
+  signName       String? // display override; defaults to prescriber name
 
   items    PrescriptionItem[]
   invoices Invoice[] // invoices that bundle this Rx (Invoice.rxId)
@@ -295,8 +293,8 @@ model Prescription {
 }
 
 model PrescriptionItem {
-  id             String       @id @default(cuid())
-  prescriptionId String
+  id             Int          @id @default(autoincrement())
+  prescriptionId Int
   prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
   drug           String
   dosage         String
@@ -308,10 +306,10 @@ model PrescriptionItem {
 }
 
 model Visit {
-  id         String   @id @default(cuid())
-  patientId  String
+  id         Int      @id @default(autoincrement())
+  patientId  Int
   patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  providerId String
+  providerId Int
   provider   Provider @relation(fields: [providerId], references: [id])
   date       String
   complaint  String
@@ -323,13 +321,13 @@ model Visit {
 
 model Invoice {
   id        String        @id // e.g. INV-2001 (app-assigned, sequential)
-  patientId String
+  patientId Int
   patient   Patient       @relation(fields: [patientId], references: [id])
   date      String
   total     Float // USD
   status    InvoiceStatus @default(DUE)
   mode      PayMode       @default(CASH)
-  rxId      String? // linked prescription, for combined invoice + Rx print
+  rxId      Int? // linked prescription, for combined invoice + Rx print
   rx        Prescription? @relation(fields: [rxId], references: [id])
 
   items    InvoiceItem[]
@@ -340,7 +338,7 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id        String  @id @default(cuid())
+  id        Int     @id @default(autoincrement())
   invoiceId String
   invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   desc      String
@@ -350,7 +348,7 @@ model InvoiceItem {
 }
 
 model Payment {
-  id        String  @id @default(cuid())
+  id        Int     @id @default(autoincrement())
   invoiceId String
   invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   amount    Float // USD
@@ -363,8 +361,8 @@ model Payment {
 
 // Doctor leave / calendar block. Whole-day unless startTime/endTime are set.
 model TimeOff {
-  id         String   @id @default(cuid())
-  providerId String
+  id         Int      @id @default(autoincrement())
+  providerId Int
   provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   from       String // YYYY-MM-DD, inclusive
   to         String // YYYY-MM-DD, inclusive
@@ -380,7 +378,7 @@ model TimeOff {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Supplier {
-  id           String    @id @default(cuid())
+  id           Int       @id @default(autoincrement())
   name         String
   contact      String
   email        String
@@ -390,18 +388,17 @@ model Supplier {
 }
 
 model Product {
-  id           String  @id @default(cuid())
+  id           Int      @id @default(autoincrement())
   name         String
   sku          String
   category     String
-  stock        Int     @default(0) // total across all locations (cache of stockByLocation)
-  reorderPoint Int     @default(10)
+  stock        Int      @default(0) // total across all locations (cache of stockByLocation)
+  reorderPoint Int      @default(10)
   cost         Float
   price        Float
   location     String // primary warehouse name
-  emoji        String  @default("📦")
 
-  supplierId String
+  supplierId Int
   supplier   Supplier @relation(fields: [supplierId], references: [id])
 
   stockByLocation ProductStock[]
@@ -413,8 +410,8 @@ model Product {
 
 // Quantity of a product held at one warehouse/location.
 model ProductStock {
-  id        String  @id @default(cuid())
-  productId String
+  id        Int     @id @default(autoincrement())
+  productId Int
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   location  String // warehouse name
   qty       Int     @default(0)
@@ -423,8 +420,8 @@ model ProductStock {
 }
 
 model Movement {
-  id        String       @id @default(cuid())
-  productId String
+  id        Int          @id @default(autoincrement())
+  productId Int
   product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   type      MovementType
   qty       Int
@@ -449,10 +446,10 @@ model Order {
 }
 
 model OrderLine {
-  id        String  @id @default(cuid())
+  id        Int     @id @default(autoincrement())
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
+  productId Int
   product   Product @relation(fields: [productId], references: [id])
   qty       Int
   unitPrice Float
@@ -466,7 +463,7 @@ model OrderLine {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Vendor {
-  id       String         @id @default(cuid())
+  id       Int            @id @default(autoincrement())
   name     String
   category VendorCategory @default(CONSUMABLES)
   contact  String
@@ -502,22 +499,22 @@ model Vendor {
 
 // One GST registration held by a vendor (a party may hold several — one per state).
 model GstRegistration {
-  id            String  @id @default(cuid())
-  vendorId      String
-  vendor        Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  gstin         String
-  pan           String
-  tradeName     String
-  legalName     String?
-  label         String // e.g. "Head Office", "Mumbai depot"
-  stateCode     String
-  address1      String
-  address2      String
-  city          String
-  state         String
-  pincode       String
-  primary       Boolean @default(false)
-  taxpayerType  String? // Regular / SEZ Unit / ISD / Composition
+  id             Int     @id @default(autoincrement())
+  vendorId       Int
+  vendor         Vendor  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  gstin          String
+  pan            String
+  tradeName      String
+  legalName      String?
+  label          String // e.g. "Head Office", "Mumbai depot"
+  stateCode      String
+  address1       String
+  address2       String
+  city           String
+  state          String
+  pincode        String
+  primary        Boolean @default(false)
+  taxpayerType   String? // Regular / SEZ Unit / ISD / Composition
   taxpayerStatus String? // Active / Cancelled
 
   @@index([vendorId])
@@ -531,19 +528,19 @@ model VendorInvite {
   note      String?
   createdAt String
   status    InviteStatus @default(PENDING)
-  vendorId  String?      @unique
+  vendorId  Int?         @unique
   vendor    Vendor?      @relation(fields: [vendorId], references: [id])
 }
 
 model Rfq {
-  id              String     @id // e.g. RFQ-1042
+  id              String         @id // e.g. RFQ-1042
   title           String
   category        VendorCategory
   createdAt       String
-  status          RfqStatus  @default(DRAFT)
-  channel         Channel    @default(EMAIL)
+  status          RfqStatus      @default(DRAFT)
+  channel         Channel        @default(EMAIL)
   notes           String?
-  awardedVendorId String? // first/sole awarded vendor (mirror of awards)
+  awardedVendorId Int? // first/sole awarded vendor (mirror of awards)
   poId            String? // first/sole resulting PO (mirror of awards)
 
   items          RfqItem[]
@@ -553,7 +550,7 @@ model Rfq {
 }
 
 model RfqItem {
-  id    String @id @default(cuid())
+  id    Int    @id @default(autoincrement())
   rfqId String
   rfq   Rfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   name  String
@@ -564,10 +561,10 @@ model RfqItem {
 }
 
 model Quote {
-  id           String      @id @default(cuid())
+  id           Int         @id @default(autoincrement())
   rfqId        String
   rfq          Rfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  vendorId     String
+  vendorId     Int
   vendor       Vendor      @relation(fields: [vendorId], references: [id])
   submittedAt  String
   total        Float // USD
@@ -582,8 +579,8 @@ model Quote {
 }
 
 model QuoteLine {
-  id        String @id @default(cuid())
-  quoteId   String
+  id        Int    @id @default(autoincrement())
+  quoteId   Int
   quote     Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   itemName  String
   qty       Float
@@ -594,10 +591,10 @@ model QuoteLine {
 
 // A split/partial award row: which vendor won, and the PO it produced.
 model RfqAward {
-  id       String        @id @default(cuid())
+  id       Int           @id @default(autoincrement())
   rfqId    String
   rfq      Rfq           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  vendorId String
+  vendorId Int
   vendor   Vendor        @relation(fields: [vendorId], references: [id])
   poId     String
   po       PurchaseOrder @relation(fields: [poId], references: [id])
@@ -610,7 +607,7 @@ model PurchaseOrder {
   id       String   @id // e.g. PO-1001
   rfqId    String? // absent for manual / direct purchases
   rfqTitle String // doubles as the PO title
-  vendorId String
+  vendorId Int
   vendor   Vendor   @relation(fields: [vendorId], references: [id])
   date     String
   total    Float // USD
@@ -631,7 +628,7 @@ model PurchaseOrder {
   closedReason String?
 
   items    POItem[]
-  receipts  GoodsReceipt[]
+  receipts GoodsReceipt[]
   awards   RfqAward[]
 
   @@index([vendorId])
@@ -640,7 +637,7 @@ model PurchaseOrder {
 
 // Ordered line on a purchase order (mirrors a QuoteLine).
 model POItem {
-  id        String        @id @default(cuid())
+  id        Int           @id @default(autoincrement())
   poId      String
   po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
   itemName  String
@@ -652,9 +649,9 @@ model POItem {
 
 // Goods Receipt Note — one delivery event against a PO (a PO may have several).
 model GoodsReceipt {
-  id    String        @id @default(cuid())
+  id    Int               @id @default(autoincrement())
   poId  String
-  po    PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  po    PurchaseOrder     @relation(fields: [poId], references: [id], onDelete: Cascade)
   date  String
   note  String?
   lines GoodsReceiptLine[]
@@ -663,8 +660,8 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptLine {
-  id        String       @id @default(cuid())
-  receiptId String
+  id        Int          @id @default(autoincrement())
+  receiptId Int
   receipt   GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   itemName  String
   qty       Float // billable units (count toward the ordered balance)
@@ -700,7 +697,7 @@ model ComplianceRecord {
 }
 
 model ComplianceTrailEvent {
-  id       String           @id @default(cuid())
+  id       Int              @id @default(autoincrement())
   recordId String
   record   ComplianceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
   ts       String
@@ -718,7 +715,7 @@ model Gstr1Filing {
 
 // Electronic Cash Ledger entry (signed per head: deposits +, settlements −).
 model CashLedgerEntry {
-  id     String        @id @default(cuid())
+  id     Int           @id @default(autoincrement())
   date   String
   kind   CashEntryKind
   ref    String? // challan CIN (deposit) or return period (settlement)
@@ -739,7 +736,7 @@ model FiledReturn3B {
 
 // Electronic Credit (ITC) Ledger entry (signed: accrual +, utilisation −).
 model CreditLedgerEntry {
-  id     String          @id @default(cuid())
+  id     Int             @id @default(autoincrement())
   date   String
   kind   CreditEntryKind
   ref    String? // return period or note
@@ -751,7 +748,7 @@ model CreditLedgerEntry {
 
 // Reverse-charge (RCM) inward supply — the clinic self-pays GST.
 model RcmInwardSupply {
-  id         String  @id @default(cuid())
+  id         Int     @id @default(autoincrement())
   date       String
   period     String // YYYY-MM
   fy         String
