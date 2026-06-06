@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 export interface StockProduct {
   id: string;
   name: string;
-  emoji: string;
   stock: number;
   location: string;
 }
@@ -153,7 +152,7 @@ export function StockActions({
             <Select value={productId} onChange={(e) => setProductId(e.target.value)} className="w-full">
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.emoji} {p.name} — {p.stock} in stock
+                  {p.name} — {p.stock} in stock
                 </option>
               ))}
             </Select>

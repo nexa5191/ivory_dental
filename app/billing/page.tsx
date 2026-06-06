@@ -5,9 +5,9 @@ import { BillingClient } from "@/components/clinic/billing-client";
 export default function BillingPage() {
   const invoices = listInvoices().map((inv) => {
     const p = getPatient(inv.patientId);
-    return { ...inv, patientName: p?.name ?? "—", patientEmoji: p?.emoji ?? "🧑" };
+    return { ...inv, patientName: p?.name ?? "—" };
   });
-  const patients = listPatients().map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }));
+  const patients = listPatients().map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <div className="animate-fade-in">

@@ -82,7 +82,6 @@ export function PatientsClient({ initial }: { initial: PatientRow[] }) {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{p.emoji}</span>
                       <div>
                         <p className="font-medium">{p.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -152,7 +151,6 @@ function AddPatientSheet({
     bloodGroup: "O+",
     allergies: [],
     conditions: [],
-    emoji: "🧑",
   });
   const set = (patch: Partial<Patient>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -218,7 +216,7 @@ function AddPatientSheet({
           hint="For B2B patients (companies, insurers). Auto-fill pulls the registered name from the GST portal."
         />
         <div>
-          <span className="mb-1.5 block text-xs font-medium text-danger">⚠ Allergies</span>
+          <span className="mb-1.5 block text-xs font-medium text-danger">Allergies</span>
           <ChipSelect
             options={ALLERGY_OPTIONS}
             value={form.allergies ?? []}

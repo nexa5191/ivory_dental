@@ -231,9 +231,8 @@ export function PatientChart({
       {/* Header */}
       <Card>
         <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-          <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-muted text-3xl">
-            {patient.emoji}
-          </div>
+          <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-muted" />
+
           <div className="min-w-0 flex-1">
             <h1 className="text-xl font-bold">{patient.name}</h1>
             <p className="text-sm text-muted-foreground">
@@ -688,7 +687,7 @@ export function PatientChart({
       >
         <div className="space-y-5">
           <div>
-            <span className="mb-1.5 block text-xs font-medium text-danger">⚠ Allergies</span>
+            <span className="mb-1.5 block text-xs font-medium text-danger">Allergies</span>
             <ChipSelect
               options={ALLERGY_OPTIONS}
               value={patient.allergies}

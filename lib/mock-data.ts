@@ -23,7 +23,6 @@ export interface Product {
   price: number;
   supplierId: string;
   location: string; // primary location
-  emoji: string;
 }
 
 export interface Movement {
@@ -71,26 +70,26 @@ export const suppliers: Supplier[] = [
 ];
 
 const seed = [
-  ["Widget A Pro", "WGT-A", "Electronics", 342, 50, 8.5, 24.0, "sup-1", "🔧"],
-  ["USB-C Cable 2m", "CBL-C2", "Cables", 2, 25, 1.2, 8.99, "sup-3", "🔌"],
-  ["Bolt M4 (100pk)", "BLT-M4", "Hardware", 11, 40, 0.04, 0.3, "sup-4", "🔩"],
-  ["Thermal Label Roll", "LBL-TH", "Packaging", 180, 60, 3.1, 9.5, "sup-2", "🏷️"],
-  ["HDMI Adapter", "ADP-HD", "Electronics", 64, 30, 4.0, 14.99, "sup-1", "🖥️"],
-  ["Gel Pen Black (12)", "PEN-GB", "Office", 420, 100, 2.2, 6.99, "sup-2", "🖊️"],
-  ["Cordless Drill", "TL-DRL", "Tools", 0, 8, 42.0, 119.0, "sup-4", "🛠️"],
-  ["Bubble Wrap 50m", "PKG-BW", "Packaging", 95, 40, 6.5, 18.0, "sup-3", "🎁"],
-  ["Ethernet Cable Cat6", "CBL-E6", "Cables", 210, 80, 2.4, 11.5, "sup-3", "🌐"],
-  ["Wireless Mouse", "EL-MSE", "Electronics", 28, 35, 6.0, 22.99, "sup-1", "🖱️"],
-  ["Hex Key Set", "TL-HEX", "Tools", 47, 20, 5.5, 16.0, "sup-4", "🔑"],
-  ["Shipping Box M", "PKG-BM", "Packaging", 640, 200, 0.6, 1.8, "sup-2", "📦"],
-  ["Sticky Notes 3x3", "OF-STK", "Office", 312, 120, 1.1, 3.49, "sup-2", "📝"],
-  ["Power Strip 6-out", "EL-PWR", "Electronics", 19, 25, 7.8, 21.0, "sup-1", "⚡"],
-  ["Zip Ties (200pk)", "HW-ZIP", "Hardware", 88, 50, 1.9, 5.5, "sup-4", "➰"],
-  ["Label Printer", "EL-LBP", "Electronics", 6, 5, 78.0, 189.0, "sup-1", "🖨️"],
-  ["Packing Tape", "PKG-TP", "Packaging", 14, 60, 1.4, 4.25, "sup-3", "🩹"],
-  ["Screwdriver Set", "TL-SDR", "Tools", 53, 25, 8.0, 23.5, "sup-4", "🪛"],
-  ["Micro SD 128GB", "EL-SD1", "Electronics", 134, 50, 9.5, 27.0, "sup-1", "💾"],
-  ["Whiteboard Marker", "OF-WBM", "Office", 76, 80, 0.8, 2.99, "sup-2", "🖍️"],
+  ["Widget A Pro", "WGT-A", "Electronics", 342, 50, 8.5, 24.0, "sup-1"],
+  ["USB-C Cable 2m", "CBL-C2", "Cables", 2, 25, 1.2, 8.99, "sup-3"],
+  ["Bolt M4 (100pk)", "BLT-M4", "Hardware", 11, 40, 0.04, 0.3, "sup-4"],
+  ["Thermal Label Roll", "LBL-TH", "Packaging", 180, 60, 3.1, 9.5, "sup-2"],
+  ["HDMI Adapter", "ADP-HD", "Electronics", 64, 30, 4.0, 14.99, "sup-1"],
+  ["Gel Pen Black (12)", "PEN-GB", "Office", 420, 100, 2.2, 6.99, "sup-2"],
+  ["Cordless Drill", "TL-DRL", "Tools", 0, 8, 42.0, 119.0, "sup-4"],
+  ["Bubble Wrap 50m", "PKG-BW", "Packaging", 95, 40, 6.5, 18.0, "sup-3"],
+  ["Ethernet Cable Cat6", "CBL-E6", "Cables", 210, 80, 2.4, 11.5, "sup-3"],
+  ["Wireless Mouse", "EL-MSE", "Electronics", 28, 35, 6.0, 22.99, "sup-1"],
+  ["Hex Key Set", "TL-HEX", "Tools", 47, 20, 5.5, 16.0, "sup-4"],
+  ["Shipping Box M", "PKG-BM", "Packaging", 640, 200, 0.6, 1.8, "sup-2"],
+  ["Sticky Notes 3x3", "OF-STK", "Office", 312, 120, 1.1, 3.49, "sup-2"],
+  ["Power Strip 6-out", "EL-PWR", "Electronics", 19, 25, 7.8, 21.0, "sup-1"],
+  ["Zip Ties (200pk)", "HW-ZIP", "Hardware", 88, 50, 1.9, 5.5, "sup-4"],
+  ["Label Printer", "EL-LBP", "Electronics", 6, 5, 78.0, 189.0, "sup-1"],
+  ["Packing Tape", "PKG-TP", "Packaging", 14, 60, 1.4, 4.25, "sup-3"],
+  ["Screwdriver Set", "TL-SDR", "Tools", 53, 25, 8.0, 23.5, "sup-4"],
+  ["Micro SD 128GB", "EL-SD1", "Electronics", 134, 50, 9.5, 27.0, "sup-1"],
+  ["Whiteboard Marker", "OF-WBM", "Office", 76, 80, 0.8, 2.99, "sup-2"],
 ];
 
 // Deterministically split a product's total stock across the 3 warehouses.
@@ -120,7 +119,6 @@ export const products: Product[] = seed.map((s, i) => {
     price: s[6] as number,
     supplierId: s[7] as string,
     location: WAREHOUSES[i % WAREHOUSES.length],
-    emoji: s[8] as string,
   };
 });
 

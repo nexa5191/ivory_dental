@@ -69,7 +69,6 @@ export interface Patient {
   conditions: string[];
   balance: number; // USD outstanding
   lastVisit: string;
-  emoji: string;
   toothFindings: Record<number, ToothStatus>;
   treatmentPlan: TreatmentItem[];
   xrays?: XrayImage[];
@@ -215,7 +214,7 @@ const seedPatients: Patient[] = [
   {
     id: "pat-1", name: "Rohan Sharma", dob: "1990-04-12", anniversary: "2016-06-12", gender: "M", phone: "+91 98200 11223",
     email: "rohan.s@example.com", bloodGroup: "B+", abhaId: "12-3456-7890-1234",
-    allergies: ["Penicillin"], conditions: ["Diabetes"], balance: 0, lastVisit: daysAgo(14), emoji: "🧑🏽",
+    allergies: ["Penicillin"], conditions: ["Diabetes"], balance: 0, lastVisit: daysAgo(14),
     toothFindings: { 16: "caries", 26: "filled", 36: "rct", 46: "crown" },
     treatmentPlan: [
       { id: "tp-1", tooth: 16, procedure: "Composite filling", phase: 1, estimate: 45, status: "planned" },
@@ -225,79 +224,79 @@ const seedPatients: Patient[] = [
   {
     id: "pat-2", name: "Priya Nair", dob: "1985-06-18", anniversary: "2011-07-05", gender: "F", phone: "+91 99876 55440",
     email: "priya.nair@example.com", bloodGroup: "O+", gstin: "29AABCW1234M1Z7", allergies: ["Latex", "Lidocaine"], conditions: ["Hypertension"],
-    balance: 120, lastVisit: daysAgo(3), emoji: "👩🏽",
+    balance: 120, lastVisit: daysAgo(3),
     toothFindings: { 11: "crown", 21: "crown", 47: "missing", 48: "implant" },
     treatmentPlan: [{ id: "tp-3", tooth: 47, procedure: "Implant placement", phase: 1, estimate: 520, status: "in-progress" }],
   },
   {
     id: "pat-3", name: "Aarav Gupta", dob: "2014-07-08", gender: "M", phone: "+91 90011 22334",
-    email: "guptafamily@example.com", bloodGroup: "A+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(30), emoji: "👦🏽",
+    email: "guptafamily@example.com", bloodGroup: "A+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(30),
     toothFindings: { 55: "caries", 65: "caries" }, treatmentPlan: [],
   },
   {
     id: "pat-4", name: "Meera Krishnan", dob: "1978-02-19", anniversary: "2002-06-25", gender: "F", phone: "+91 98450 99887",
-    email: "meera.k@example.com", bloodGroup: "AB+", allergies: ["Aspirin"], conditions: ["Asthma"], balance: 65, lastVisit: daysAgo(1), emoji: "👩🏾",
+    email: "meera.k@example.com", bloodGroup: "AB+", allergies: ["Aspirin"], conditions: ["Asthma"], balance: 65, lastVisit: daysAgo(1),
     toothFindings: { 36: "caries", 37: "filled" }, treatmentPlan: [{ id: "tp-4", tooth: 36, procedure: "Root canal treatment", phase: 1, estimate: 160, status: "planned" }],
   },
   {
     id: "pat-5", name: "Imran Sheikh", dob: "1995-09-25", gender: "M", phone: "+91 97000 44556",
-    email: "imran.s@example.com", bloodGroup: "B-", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(7), emoji: "🧔🏽",
+    email: "imran.s@example.com", bloodGroup: "B-", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(7),
     toothFindings: { 18: "missing", 28: "missing" }, treatmentPlan: [],
   },
   {
     id: "pat-6", name: "Kavya Reddy", dob: "2001-12-03", gender: "F", phone: "+91 96322 78900",
-    email: "kavya.r@example.com", bloodGroup: "O-", allergies: ["Sulfa"], conditions: ["Pregnancy"], balance: 40, lastVisit: daysAgo(2), emoji: "👩🏻",
+    email: "kavya.r@example.com", bloodGroup: "O-", allergies: ["Sulfa"], conditions: ["Pregnancy"], balance: 40, lastVisit: daysAgo(2),
     toothFindings: { 13: "caries" }, treatmentPlan: [{ id: "tp-5", tooth: 13, procedure: "Composite filling", phase: 1, estimate: 45, status: "planned" }],
   },
   {
     id: "pat-7", name: "Sanjay Patel", dob: "1968-06-15", anniversary: "1996-06-09", gender: "M", phone: "+91 99090 12121",
-    email: "sanjay.p@example.com", bloodGroup: "A-", gstin: "29AAQCS8899R1Z2", allergies: [], conditions: ["Heart disease", "Hypertension"], balance: 0, lastVisit: daysAgo(21), emoji: "👴🏽",
+    email: "sanjay.p@example.com", bloodGroup: "A-", gstin: "29AAQCS8899R1Z2", allergies: [], conditions: ["Heart disease", "Hypertension"], balance: 0, lastVisit: daysAgo(21),
     toothFindings: { 46: "rct", 47: "crown", 11: "filled" }, treatmentPlan: [],
   },
   {
     id: "pat-8", name: "Neha Joshi", dob: "1992-06-08", anniversary: "2018-06-20", gender: "F", phone: "+91 98330 45567",
-    email: "neha.j@example.com", bloodGroup: "O+", allergies: [], conditions: [], balance: 90, lastVisit: daysAgo(9), emoji: "👩🏼",
+    email: "neha.j@example.com", bloodGroup: "O+", allergies: [], conditions: [], balance: 90, lastVisit: daysAgo(9),
     toothFindings: { 24: "caries", 25: "filled" }, treatmentPlan: [{ id: "tp-6", tooth: 24, procedure: "Composite filling", phase: 1, estimate: 45, status: "planned" }],
   },
   {
     id: "pat-9", name: "Arjun Menon", dob: "1988-03-22", gender: "M", phone: "+91 97411 22890",
-    email: "arjun.m@example.com", bloodGroup: "B+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(45), emoji: "🧑🏽",
+    email: "arjun.m@example.com", bloodGroup: "B+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(45),
     toothFindings: { 38: "missing" }, treatmentPlan: [],
   },
   {
     id: "pat-10", name: "Fatima Khan", dob: "1999-11-14", gender: "F", phone: "+91 96500 33221",
-    email: "fatima.k@example.com", bloodGroup: "AB-", allergies: ["Penicillin"], conditions: [], balance: 150, lastVisit: daysAgo(5), emoji: "🧕🏽",
+    email: "fatima.k@example.com", bloodGroup: "AB-", allergies: ["Penicillin"], conditions: [], balance: 150, lastVisit: daysAgo(5),
     toothFindings: { 16: "rct", 17: "crown" }, treatmentPlan: [{ id: "tp-7", tooth: 16, procedure: "Crown (PFM)", phase: 1, estimate: 150, status: "in-progress" }],
   },
   {
     id: "pat-11", name: "Vivek Iyer", dob: "1975-06-30", anniversary: "2003-12-12", gender: "M", phone: "+91 99860 77654",
-    email: "vivek.i@example.com", bloodGroup: "A+", allergies: [], conditions: ["Diabetes"], balance: 0, lastVisit: daysAgo(60), emoji: "👨🏽",
+    email: "vivek.i@example.com", bloodGroup: "A+", allergies: [], conditions: ["Diabetes"], balance: 0, lastVisit: daysAgo(60),
     toothFindings: { 26: "filled", 36: "filled" }, treatmentPlan: [],
   },
   {
     id: "pat-12", name: "Ananya Das", dob: "2010-05-19", gender: "F", phone: "+91 90077 88665",
-    email: "dasfamily@example.com", bloodGroup: "O+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(18), emoji: "👧🏽",
+    email: "dasfamily@example.com", bloodGroup: "O+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(18),
     toothFindings: { 75: "caries" }, treatmentPlan: [],
   },
   {
     id: "pat-13", name: "Rahul Verma", dob: "1983-09-09", gender: "M", phone: "+91 98201 55443",
-    email: "rahul.v@example.com", bloodGroup: "B-", allergies: [], conditions: [], balance: 220, lastVisit: daysAgo(11), emoji: "🧑🏻",
+    email: "rahul.v@example.com", bloodGroup: "B-", allergies: [], conditions: [], balance: 220, lastVisit: daysAgo(11),
     toothFindings: { 46: "caries", 47: "caries", 48: "missing" },
     treatmentPlan: [{ id: "tp-8", tooth: 46, procedure: "Root canal treatment", phase: 1, estimate: 160, status: "planned" }],
   },
   {
     id: "pat-14", name: "Sneha Pillai", dob: "1996-06-25", gender: "F", phone: "+91 97300 99012",
-    email: "sneha.p@example.com", bloodGroup: "AB+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(33), emoji: "👩🏽",
+    email: "sneha.p@example.com", bloodGroup: "AB+", allergies: [], conditions: [], balance: 0, lastVisit: daysAgo(33),
     toothFindings: { 21: "filled" }, treatmentPlan: [],
   },
   {
     id: "pat-15", name: "Mohammed Ali", dob: "1970-01-30", gender: "M", phone: "+91 96000 11447",
-    email: "m.ali@example.com", bloodGroup: "A-", allergies: [], conditions: ["Hypertension", "Heart disease"], balance: 75, lastVisit: daysAgo(6), emoji: "🧔🏾",
+    email: "m.ali@example.com", bloodGroup: "A-", allergies: [], conditions: ["Hypertension", "Heart disease"], balance: 75, lastVisit: daysAgo(6),
     toothFindings: { 11: "crown", 21: "crown", 36: "rct" }, treatmentPlan: [],
   },
   {
     id: "pat-16", name: "Divya Rao", dob: "2003-07-02", gender: "F", phone: "+91 90088 22113",
-    email: "divya.r@example.com", bloodGroup: "O+", allergies: ["Latex"], conditions: [], balance: 0, lastVisit: daysAgo(25), emoji: "👩🏻",
+    email: "divya.r@example.com", bloodGroup: "O+", allergies: ["Latex"], conditions: [], balance: 0, lastVisit: daysAgo(25),
     toothFindings: { 14: "caries" }, treatmentPlan: [{ id: "tp-9", tooth: 14, procedure: "Composite filling", phase: 1, estimate: 45, status: "planned" }],
   },
 ];
@@ -485,7 +484,6 @@ export function upsertPatient(input: Partial<Patient> & { id?: string }) {
     conditions: input.conditions ?? [],
     balance: input.balance ?? 0,
     lastVisit: input.lastVisit ?? new Date(T).toISOString(),
-    emoji: input.emoji ?? "🧑",
     toothFindings: input.toothFindings ?? {},
     treatmentPlan: input.treatmentPlan ?? [],
   };
@@ -631,7 +629,6 @@ export function getVisitById(id: string) {
 export interface Celebration {
   patientId: string;
   name: string;
-  emoji: string;
   type: "birthday" | "anniversary";
   date: string; // this/next occurrence ISO
   inDays: number;
@@ -658,7 +655,6 @@ export function upcomingCelebrations(days = 45): Celebration[] {
     out.push({
       patientId: p.id,
       name: p.name,
-      emoji: p.emoji,
       type,
       date: new Date(occ).toISOString(),
       inDays,

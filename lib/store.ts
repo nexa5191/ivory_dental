@@ -66,7 +66,6 @@ export function upsertProduct(input: Partial<Product> & { id?: string }) {
     price: input.price ?? 0,
     supplierId: input.supplierId ?? "sup-1",
     location: input.location ?? WAREHOUSES[0],
-    emoji: input.emoji ?? "📦",
   };
   db.products.push(next);
   return next;
@@ -132,7 +131,7 @@ export function receiveIntoInventory(name: string, qty: number, ref: string) {
   if (!n || q <= 0) return null;
   let p = findProductByName(n);
   if (!p) {
-    p = upsertProduct({ name: n, category: "Consumables", emoji: "🦷", reorderPoint: 5, stock: 0 });
+    p = upsertProduct({ name: n, category: "Consumables", reorderPoint: 5, stock: 0 });
   }
   return recordMovement({ productId: p.id, type: "in", qty: q, ref });
 }
@@ -174,7 +173,7 @@ export function getMetrics() {
       .filter((p) => statusOf(p) !== "good")
       .sort((a, b) => a.stock - b.stock)
       .slice(0, 6)
-      .map((p) => ({ id: p.id, name: p.name, stock: p.stock, reorder: p.reorderPoint, emoji: p.emoji })),
+      .map((p) => ({ id: p.id, name: p.name, stock: p.stock, reorder: p.reorderPoint })),
   };
 }
 

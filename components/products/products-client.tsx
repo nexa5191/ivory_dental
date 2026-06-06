@@ -182,7 +182,6 @@ export function ProductsClient({
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">{p.emoji}</span>
                           <div>
                             <p className="font-medium">{p.name}</p>
                             <p className="text-xs text-muted-foreground">{p.location}</p>
@@ -223,8 +222,7 @@ export function ProductsClient({
                 onClick={() => setEditing(p)}
                 className="cursor-pointer p-4 transition-shadow hover:shadow-md"
               >
-                <div className="flex items-start justify-between">
-                  <span className="text-3xl">{p.emoji}</span>
+                <div className="flex items-start justify-end">
                   <Badge variant={st}>{statusLabel[st]}</Badge>
                 </div>
                 <p className="mt-3 font-medium leading-tight">{p.name}</p>
@@ -311,7 +309,6 @@ function ProductSheet({
         price: 0,
         supplierId: suppliers[0]?.id,
         location: WAREHOUSES[0],
-        emoji: "📦",
       });
   }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -341,7 +338,6 @@ function ProductSheet({
       <div className="space-y-4">
         {product && (
           <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
-            <span className="text-4xl">{product.emoji}</span>
             <div>
               <p className="text-sm text-muted-foreground">Current value</p>
               <p className="text-xl font-bold">{formatCurrency(product.stock * product.cost)}</p>
@@ -355,14 +351,9 @@ function ProductSheet({
         <Field label="Name">
           <Input value={form.name ?? ""} onChange={(e) => set({ name: e.target.value })} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="SKU">
-            <Input value={form.sku ?? ""} onChange={(e) => set({ sku: e.target.value })} />
-          </Field>
-          <Field label="Emoji">
-            <Input value={form.emoji ?? ""} onChange={(e) => set({ emoji: e.target.value })} />
-          </Field>
-        </div>
+        <Field label="SKU">
+          <Input value={form.sku ?? ""} onChange={(e) => set({ sku: e.target.value })} />
+        </Field>
         <Field label="Category">
           <Select value={form.category} onChange={(e) => set({ category: e.target.value })} className="w-full">
             {CATEGORIES.map((c) => (

@@ -14,7 +14,6 @@ export default function NewInvoicePage() {
   const patients = listPatients().map((p) => ({
     id: p.id,
     name: p.name,
-    emoji: p.emoji,
     phone: p.phone,
     email: p.email,
     abhaId: p.abhaId ?? "",

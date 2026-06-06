@@ -18,7 +18,6 @@ import { formatDate as fmtDate, cn } from "@/lib/utils";
 interface PatientLite {
   id: string;
   name: string;
-  emoji: string;
   phone: string;
   balance: number;
 }
@@ -276,7 +275,6 @@ export function DashboardClient({
                     href={`/patients/${inv.patientId}`}
                     className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-accent/50"
                   >
-                    <span className="text-xl">{p?.emoji}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{p?.name}</p>
                       <p className="truncate text-xs text-muted-foreground">
@@ -319,7 +317,6 @@ export function DashboardClient({
                     <span className="w-14 shrink-0 text-xs font-medium text-muted-foreground">
                       {formatTime(a.start)}
                     </span>
-                    <span className="text-xl">{p?.emoji}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{p?.name}</p>
                       <p className="truncate text-xs text-muted-foreground">
@@ -357,7 +354,6 @@ export function DashboardClient({
                   href={`/patients/${p.id}`}
                   className="flex items-center gap-3 px-5 py-2.5 transition-colors hover:bg-accent/50"
                 >
-                  <span className="text-xl">{p.emoji}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{p.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{p.phone}</p>
@@ -393,15 +389,12 @@ export function DashboardClient({
                   href={`/patients/${c.patientId}`}
                   className="flex w-52 shrink-0 items-center gap-3 rounded-xl border p-3 transition-colors hover:bg-accent/50"
                 >
-                  <div className="relative">
-                    <span className="text-2xl">{c.emoji}</span>
-                    <span className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-card shadow">
-                      {c.type === "birthday" ? (
-                        <Cake className="size-3 text-primary" />
-                      ) : (
-                        <Heart className="size-3 text-danger" />
-                      )}
-                    </span>
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                    {c.type === "birthday" ? (
+                      <Cake className="size-4 text-primary" />
+                    ) : (
+                      <Heart className="size-4 text-danger" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{c.name}</p>
@@ -409,7 +402,7 @@ export function DashboardClient({
                       {c.type === "birthday" ? `Turns ${c.years}` : `${c.years} yrs married`}
                     </p>
                     <p className="text-xs font-medium text-primary">
-                      {c.inDays === 0 ? "Today 🎉" : c.inDays === 1 ? "Tomorrow" : `in ${c.inDays} days`}
+                      {c.inDays === 0 ? "Today" : c.inDays === 1 ? "Tomorrow" : `in ${c.inDays} days`}
                     </p>
                   </div>
                 </Link>
@@ -434,7 +427,6 @@ export function DashboardClient({
               const p = pmap.get(a.patientId);
               return (
                 <div key={a.id} className="flex items-center gap-3 rounded-lg border p-2.5">
-                  <span className="text-xl">{p?.emoji}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{p?.name}</p>
                     <p className="text-xs text-muted-foreground">{a.chair}</p>

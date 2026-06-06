@@ -36,7 +36,6 @@ export function InventoryHub({
   const stockProducts: StockProduct[] = products.map((p) => ({
     id: p.id,
     name: p.name,
-    emoji: p.emoji,
     stock: p.stock,
     location: p.location,
   }));

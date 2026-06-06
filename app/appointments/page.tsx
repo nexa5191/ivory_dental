@@ -4,7 +4,7 @@ import { AppointmentsClient } from "@/components/clinic/appointments-client";
 
 export default function AppointmentsPage() {
   const appts = listAppointments();
-  const patients = listPatients().map((p) => ({ id: p.id, name: p.name, emoji: p.emoji }));
+  const patients = listPatients().map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <div className="animate-fade-in">

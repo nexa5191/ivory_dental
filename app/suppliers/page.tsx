@@ -58,7 +58,7 @@ export default function SuppliersPage() {
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {linked.slice(0, 4).map((p) => (
                     <Badge key={p.id} variant="muted">
-                      {p.emoji} {p.name.split(" ")[0]}
+                      {p.name.split(" ")[0]}
                     </Badge>
                   ))}
                   {linked.length > 4 && <Badge variant="muted">+{linked.length - 4}</Badge>}

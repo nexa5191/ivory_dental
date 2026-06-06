@@ -16,11 +16,9 @@ import { cn, formatDate as fmtDate } from "@/lib/utils";
 interface PatientLite {
   id: string;
   name: string;
-  emoji: string;
 }
 interface Row extends Invoice {
   patientName: string;
-  patientEmoji: string;
 }
 
 const FILTERS = ["all", "paid", "partial", "due"] as const;
@@ -72,7 +70,7 @@ export function BillingClient({
     const saved: Invoice = await res.json();
     const p = patients.find((x) => x.id === saved.patientId);
     setRowsData((prev) => [
-      { ...saved, patientName: p?.name ?? "—", patientEmoji: p?.emoji ?? "🧑" },
+      { ...saved, patientName: p?.name ?? "—" },
       ...prev,
     ]);
     setCreating(false);
@@ -160,8 +158,7 @@ export function BillingClient({
                 <tr key={inv.id} className="border-b transition-colors last:border-0 hover:bg-accent/50">
                   <td className="px-5 py-3 font-mono text-xs font-medium">{inv.id}</td>
                   <td className="px-5 py-3">
-                    <Link href={`/patients/${inv.patientId}`} className="flex items-center gap-2 hover:underline">
-                      <span>{inv.patientEmoji}</span>
+                    <Link href={`/patients/${inv.patientId}`} className="hover:underline">
                       {inv.patientName}
                     </Link>
                   </td>
@@ -421,7 +418,7 @@ function CreateInvoiceSheet({
           <Select value={patientId} onChange={(e) => setPatientId(e.target.value)} className="w-full">
             {patients.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.emoji} {p.name}
+                {p.name}
               </option>
             ))}
           </Select>

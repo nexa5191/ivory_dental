@@ -12,7 +12,7 @@ import { usePrefs } from "@/components/prefs/prefs-provider";
 import { cn, formatDate } from "@/lib/utils";
 
 interface PatientLite {
-  id: string; name: string; emoji: string; phone: string; email: string; abhaId: string;
+  id: string; name: string; phone: string; email: string; abhaId: string;
 }
 interface RxLite {
   id: string; patientId: string; date: string; providerName: string;
@@ -372,7 +372,7 @@ export function InvoiceBuilder({
               <Select value={patientId} onChange={(e) => setPatientId(e.target.value)} className="w-full">
                 {patients.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.emoji} {p.name}
+                    {p.name}
                   </option>
                 ))}
               </Select>

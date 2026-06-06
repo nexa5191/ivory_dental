@@ -53,7 +53,7 @@ export function StockView({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
-                        {product?.emoji} {product?.name ?? m.productId}
+                        {product?.name ?? m.productId}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {info.label} · {m.ref}

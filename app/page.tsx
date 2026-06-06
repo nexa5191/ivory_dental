@@ -15,7 +15,6 @@ export default function DashboardPage() {
   const patients = listPatients().map((p) => ({
     id: p.id,
     name: p.name,
-    emoji: p.emoji,
     phone: p.phone,
     balance: p.balance,
   }));

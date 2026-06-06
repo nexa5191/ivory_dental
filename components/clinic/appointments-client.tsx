@@ -15,7 +15,6 @@ import { cn, formatDate } from "@/lib/utils";
 interface PatientLite {
   id: string;
   name: string;
-  emoji: string;
 }
 
 const STATUSES: ApptStatus[] = ["booked", "arrived", "in-consult", "completed", "no-show"];
@@ -312,7 +311,6 @@ export function AppointmentsClient({
                       {showDate && <span className="block text-[10px]">{fmtDay(a.start)}</span>}
                     </span>
                     <Link href={`/patients/${a.patientId}`} className="flex min-w-0 flex-1 items-center gap-3 hover:underline">
-                      <span className="text-xl">{p?.emoji}</span>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{p?.name}</p>
                         <p className="truncate text-xs text-muted-foreground">
@@ -543,7 +541,6 @@ function BoardView({
                 return (
                   <div key={a.id} className="rounded-lg border bg-card p-2.5 shadow-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{p?.emoji}</span>
                       <Link href={`/patients/${a.patientId}`} className="min-w-0 flex-1 hover:underline">
                         <p className="truncate text-sm font-medium">{p?.name}</p>
                       </Link>
@@ -871,7 +868,7 @@ function AddAppointmentSheet({
           <Select value={patientId} onChange={(e) => setPatientId(e.target.value)} className="w-full">
             {patients.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.emoji} {p.name}
+                {p.name}
               </option>
             ))}
           </Select>
