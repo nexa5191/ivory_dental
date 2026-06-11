@@ -19,8 +19,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -136,11 +136,6 @@ enum POPayMode {
   CASH   @map("cash")
 }
 
-enum InviteStatus {
-  PENDING    @map("pending")
-  REGISTERED @map("registered")
-}
-
 enum CashEntryKind {
   DEPOSIT    @map("deposit")
   SETTLEMENT @map("settlement")
@@ -156,57 +151,230 @@ enum JobWorkStatus {
   RECEIVED @map("received")
 }
 
+enum TenantPlan {
+  TRIAL @map("trial")
+  BASIC @map("basic")
+  PRO   @map("pro")
+}
+
+enum TenantStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  CHURNED   @map("churned")
+}
+
+// Shared by TenantInvite, StaffInvite, and VendorInvite
+enum InviteTokenStatus {
+  PENDING  @map("pending")
+  ACCEPTED @map("accepted")
+  EXPIRED  @map("expired")
+  REVOKED  @map("revoked")
+}
+
+
+// One row per dental clinic/chain that signs up.
+model Tenant {
+  id          String       @id @default(cuid())
+  name        String       // clinic display name
+  slug        String       @unique // URL-safe identifier, e.g. "ivory-dental-bkc"
+  plan        TenantPlan   @default(TRIAL)
+  status      TenantStatus @default(ACTIVE)
+  trialEndsAt String?      // ISO date
+  createdAt   String       // ISO
+
+  // Relations — every major domain model hangs off Tenant
+  locations         Location[]
+  providers         Provider[]
+  patients          Patient[]
+  appointments      Appointment[]
+  prescriptions     Prescription[]
+  visits            Visit[]
+  invoices          Invoice[]
+  suppliers         Supplier[]
+  products          Product[]
+  orders            Order[]
+  vendors           Vendor[]
+  vendorInvites     VendorInvite[]
+  rfqs              Rfq[]
+  purchaseOrders    PurchaseOrder[]
+  complianceRecords ComplianceRecord[]
+  gstr1Filings      Gstr1Filing[]
+  cashEntries       CashLedgerEntry[]
+  filedReturns      FiledReturn3B[]
+  creditEntries     CreditLedgerEntry[]
+  rcmSupplies       RcmInwardSupply[]
+  jobWorkChallans   JobWorkChallan[]
+  users             User[]
+  roles             Role[]
+  staffInvites      StaffInvite[]
+  invite            TenantInvite?
+}
+
+// Superadmin sends this to a clinic owner to begin onboarding.
+// The tenant row is created *during* the owner's onboarding, not before.
+model TenantInvite {
+  token     String            @id // e.g. tinv-xxxxxxxxxxxxxxxx
+  email     String
+  sentBy    String            // superadmin identifier (email or id)
+  sentAt    String
+  expiresAt String
+  status    InviteTokenStatus @default(PENDING)
+
+  // Set once the invited owner completes onboarding and the tenant is created
+  tenantId  String?           @unique
+  tenant    Tenant?           @relation(fields: [tenantId], references: [id])
+}
+
+// Tenant admin invites staff (receptionist, junior dentist, etc.)
+model StaffInvite {
+  token     String            @id // e.g. sinv-xxxxxxxxxxxxxxxx
+  tenantId  String
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email     String
+  roleId    Int               // role pre-assigned by the inviting admin
+  role      Role              @relation(fields: [roleId], references: [id])
+  invitedBy Int               // userId of the admin who sent this
+  inviter   User              @relation("SentInvites", fields: [invitedBy], references: [id])
+  sentAt    String
+  expiresAt String
+  status    InviteTokenStatus @default(PENDING)
+
+  @@index([tenantId])
+}
+
+// Login identity for all staff (clinical + non-clinical).
+// A User who is also a treating dentist links to a Provider row.
+model User {
+  id           Int       @id @default(autoincrement())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  email        String
+  passwordHash String
+  isActive     Boolean   @default(true)
+  lastLoginAt  String?
+  createdAt    String
+
+  // Optional clinical link — null for receptionists, data-entry staff, etc.
+  providerId   Int?      @unique
+  provider     Provider? @relation(fields: [providerId], references: [id])
+
+  roles        UserRole[]
+  sentInvites  StaffInvite[] @relation("SentInvites")
+
+  @@unique([tenantId, email]) // email unique per tenant, not globally
+  @@index([tenantId])
+}
+
+// A role belongs to one tenant (or to no tenant when isSystem = true).
+// System roles: SUPER_ADMIN, ADMIN, SUPPORT — seeded at deploy time, undeletable.
+// Tenant roles: anything the clinic creates, e.g. "Data Entry Operator".
+model Role {
+  id          Int      @id @default(autoincrement())
+  tenantId    String?  // null = system role
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String   // e.g. "Admin", "Data Entry Operator"
+  description String?
+  isSystem    Boolean  @default(false) // system roles cannot be edited or deleted
+
+  permissions  Permission[]
+  userRoles    UserRole[]
+  staffInvites StaffInvite[]
+
+  @@unique([tenantId, name]) // name unique within a tenant (nulls treated as distinct by Postgres)
+  @@index([tenantId])
+}
+
+// A single capability string granted to a role.
+// Convention:  resource:action   → "patients:read", "invoices:write"
+//              ui:feature        → "ui:bulk_upload", "ui:export_csv"
+//              module:access     → "procurement:access", "gst:access"
+// The app checks: user.permissions.includes('patients:read')
+model Permission {
+  id         Int    @id @default(autoincrement())
+  roleId     Int
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission String // the capability string
+
+  @@unique([roleId, permission])
+  @@index([roleId])
+}
+
+// Junction: which roles a user currently holds (a user may hold multiple).
+model UserRole {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId   Int
+  role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Clinic — locations, providers, patients & the clinical record
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Location {
-  id        String  @id // stable branch key == name in the app
+  id        Int     @id @default(autoincrement())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   address   String
   city      String
   phone     String
   email     String
   gstin     String
-  lead      String // lead dentist (free-text name)
+  lead      String
   chairs    Int     @default(1)
   openHours String
   active    Boolean @default(true)
 
   patients Patient[]
+
+  @@index([tenantId])
 }
 
 model Provider {
   id        Int    @id @default(autoincrement())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   specialty String
-  reg       String // registration / council number
-  color     String // hsl chart hue index "1".."5"
+  reg       String
+  color     String
 
   appointments  Appointment[]
   prescriptions Prescription[]
   visits        Visit[]
   timeOff       TimeOff[]
+  user          User?
+
+  @@index([tenantId])
 }
 
 model Patient {
   id          Int      @id @default(autoincrement())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
-  dob         String // YYYY-MM-DD
-  anniversary String? // wedding anniversary YYYY-MM-DD
+  dob         String
+  anniversary String?
   gender      Gender   @default(Other)
   phone       String
   email       String
   bloodGroup  String
   abhaId      String?
-  gstin       String? // set for corporate / insurer (B2B) patients
+  gstin       String?
   allergies   String[]
   conditions  String[]
-  balance     Float    @default(0) // USD outstanding
-  lastVisit   String // ISO
+  balance     Float    @default(0)
+  lastVisit   String
 
-  locationId String?
-  location   Location? @relation(fields: [locationId], references: [id])
+  locationId Int?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
 
   toothFindings ToothFinding[]
   treatmentPlan TreatmentItem[]
@@ -216,8 +384,10 @@ model Patient {
   visits        Visit[]
   invoices      Invoice[]
 
+  @@index([tenantId])
   @@index([locationId])
 }
+
 
 // Per-tooth chart finding (FDI numbering). Replaces Patient.toothFindings map.
 model ToothFinding {
@@ -259,36 +429,42 @@ model XrayImage {
 
 model Appointment {
   id          Int        @id @default(autoincrement())
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId   Int
   patient     Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
   providerId  Int
   provider    Provider   @relation(fields: [providerId], references: [id])
-  start       String // ISO
+  start       String
   durationMin Int        @default(30)
   type        ApptType   @default(IN_CLINIC)
   status      ApptStatus @default(BOOKED)
   reason      String
   chair       String
 
+  @@index([tenantId])
   @@index([patientId])
   @@index([providerId])
 }
 
 model Prescription {
   id             Int      @id @default(autoincrement())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId      Int
   patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   providerId     Int
   provider       Provider @relation(fields: [providerId], references: [id])
   date           String
-  advice         String[] // free-text bullet advice
-  patientName    String? // display override; defaults to patient name
-  prescriberName String? // display override; defaults to provider name
-  signName       String? // display override; defaults to prescriber name
+  advice         String[]
+  patientName    String?
+  prescriberName String?
+  signName       String?
 
   items    PrescriptionItem[]
-  invoices Invoice[] // invoices that bundle this Rx (Invoice.rxId)
+  invoices Invoice[]
 
+  @@index([tenantId])
   @@index([patientId])
   @@index([providerId])
 }
@@ -308,6 +484,8 @@ model PrescriptionItem {
 
 model Visit {
   id         Int      @id @default(autoincrement())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId  Int
   patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   providerId Int
@@ -316,31 +494,35 @@ model Visit {
   complaint  String
   notes      String
 
+  @@index([tenantId])
   @@index([patientId])
   @@index([providerId])
 }
 
 model Invoice {
-  id        String        @id // e.g. INV-2001 (app-assigned, sequential)
+  id        Int           @id @default(autoincrement())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   patientId Int
   patient   Patient       @relation(fields: [patientId], references: [id])
   date      String
-  total     Float // USD
+  total     Float
   status    InvoiceStatus @default(DUE)
   mode      PayMode       @default(CASH)
-  rxId      Int? // linked prescription, for combined invoice + Rx print
+  rxId      Int?
   rx        Prescription? @relation(fields: [rxId], references: [id])
 
   items    InvoiceItem[]
   payments Payment[]
 
+  @@index([tenantId])
   @@index([patientId])
   @@index([rxId])
 }
 
 model InvoiceItem {
   id        Int     @id @default(autoincrement())
-  invoiceId String
+  invoiceId Int
   invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   desc      String
   amount    Float // USD
@@ -350,7 +532,7 @@ model InvoiceItem {
 
 model Payment {
   id        Int     @id @default(autoincrement())
-  invoiceId String
+  invoiceId Int
   invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   amount    Float // USD
   mode      PayMode
@@ -380,24 +562,31 @@ model TimeOff {
 
 model Supplier {
   id           Int       @id @default(autoincrement())
+  tenantId     String
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name         String
   contact      String
   email        String
   leadTimeDays Int
-  rating       Int // 1-5
-  products     Product[]
+  rating       Int
+
+  products Product[]
+
+  @@index([tenantId])
 }
 
 model Product {
   id           Int      @id @default(autoincrement())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name         String
   sku          String
   category     String
-  stock        Int      @default(0) // total across all locations (cache of stockByLocation)
+  stock        Int      @default(0)
   reorderPoint Int      @default(10)
   cost         Float
   price        Float
-  location     String // primary warehouse name
+  location     String
 
   supplierId Int
   supplier   Supplier @relation(fields: [supplierId], references: [id])
@@ -406,6 +595,7 @@ model Product {
   movements       Movement[]
   orderLines      OrderLine[]
 
+  @@index([tenantId])
   @@index([supplierId])
 }
 
@@ -435,20 +625,24 @@ model Movement {
 // Purchase or sales order from the inventory module (distinct from procurement
 // PurchaseOrder, which is the vendor-portal flow).
 model Order {
-  id      String      @id // e.g. PO-1043 / SO-9921
-  type    OrderType
-  partyId String // supplierId for purchase, customer id for sales (not FK'd)
-  party   String // party display name
-  status  OrderStatus
-  total   Float
-  date    String
+  id       Int         @id @default(autoincrement())
+  tenantId String
+  tenant   Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type     OrderType
+  partyId  String
+  party    String
+  status   OrderStatus
+  total    Float
+  date     String
 
   lines OrderLine[]
+
+  @@index([tenantId])
 }
 
 model OrderLine {
   id        Int     @id @default(autoincrement())
-  orderId   String
+  orderId   Int
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId Int
   product   Product @relation(fields: [productId], references: [id])
@@ -465,28 +659,28 @@ model OrderLine {
 
 model Vendor {
   id       Int            @id @default(autoincrement())
+  tenantId String
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name     String
   category VendorCategory @default(CONSUMABLES)
   contact  String
   email    String
   phone    String
   city     String
-  gstin    String // mirrors the primary registration
+  gstin    String
   pan      String?
-  rating   Int            @default(4) // 1-5
+  rating   Int            @default(4)
   active   Boolean        @default(true)
   msme     Boolean        @default(false)
-  udyam    String? // Udyam Registration Number
-  token    String         @unique // key for the public self-service portal link
+  udyam    String?
+  token    String         @unique
 
-  // Banking (inlined — one set of remittance details per vendor)
   bankAccountName   String?
   bankAccountNumber String?
   bankIfsc          String?
   bankName          String?
   bankBranch        String?
 
-  // TDS deducted on payments to this vendor (Form 26Q)
   tdsSection String?
   tdsRate    Float?
 
@@ -496,6 +690,8 @@ model Vendor {
   invitedToRfqs  Rfq[]             @relation("RfqInvitedVendors")
   awards         RfqAward[]
   invite         VendorInvite?
+
+  @@index([tenantId])
 }
 
 // One GST registration held by a vendor (a party may hold several — one per state).
@@ -523,36 +719,44 @@ model GstRegistration {
 
 // Self-registration invite — a prospective vendor opens the link & registers.
 model VendorInvite {
-  token     String       @id // e.g. vreg-xxxxxxxx
+  token     String            @id // e.g. vreg-xxxxxxxx
+  tenantId  String
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   email     String?
   phone     String?
   note      String?
   createdAt String
-  status    InviteStatus @default(PENDING)
-  vendorId  Int?         @unique
-  vendor    Vendor?      @relation(fields: [vendorId], references: [id])
+  status    InviteTokenStatus @default(PENDING)
+  vendorId  Int?              @unique
+  vendor    Vendor?           @relation(fields: [vendorId], references: [id])
+
+  @@index([tenantId])
 }
 
 model Rfq {
-  id              String         @id // e.g. RFQ-1042
+  id              Int            @id @default(autoincrement())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title           String
   category        VendorCategory
   createdAt       String
   status          RfqStatus      @default(DRAFT)
   channel         Channel        @default(EMAIL)
   notes           String?
-  awardedVendorId Int? // first/sole awarded vendor (mirror of awards)
-  poId            String? // first/sole resulting PO (mirror of awards)
+  awardedVendorId Int?
+  poId            Int?
 
   items          RfqItem[]
   quotes         Quote[]
   awards         RfqAward[]
   invitedVendors Vendor[]   @relation("RfqInvitedVendors")
+
+  @@index([tenantId])
 }
 
 model RfqItem {
   id    Int    @id @default(autoincrement())
-  rfqId String
+  rfqId Int
   rfq   Rfq    @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   name  String
   qty   Float
@@ -563,7 +767,7 @@ model RfqItem {
 
 model Quote {
   id           Int         @id @default(autoincrement())
-  rfqId        String
+  rfqId        Int
   rfq          Rfq         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   vendorId     Int
   vendor       Vendor      @relation(fields: [vendorId], references: [id])
@@ -593,11 +797,11 @@ model QuoteLine {
 // A split/partial award row: which vendor won, and the PO it produced.
 model RfqAward {
   id       Int           @id @default(autoincrement())
-  rfqId    String
+  rfqId    Int
   rfq      Rfq           @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   vendorId Int
   vendor   Vendor        @relation(fields: [vendorId], references: [id])
-  poId     String
+  poId     Int
   po       PurchaseOrder @relation(fields: [poId], references: [id])
 
   @@index([rfqId])
@@ -605,22 +809,22 @@ model RfqAward {
 }
 
 model PurchaseOrder {
-  id       String   @id // e.g. PO-1001
-  rfqId    String? // absent for manual / direct purchases
-  rfqTitle String // doubles as the PO title
+  id       Int      @id @default(autoincrement())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rfqId    Int?
+  rfqTitle String
   vendorId Int
   vendor   Vendor   @relation(fields: [vendorId], references: [id])
   date     String
-  total    Float // USD
+  total    Float
   status   POStatus @default(ISSUED)
-  manual   Boolean  @default(false) // recorded directly, bypassing RFQ→PO
+  manual   Boolean  @default(false)
 
-  // Single vendor invoice (inlined — a PO carries at most one)
   invoiceNumber String?
   invoiceDate   String?
   invoiceAmount Float?
 
-  // Single payment (inlined)
   paymentDate      String?
   paymentMode      POPayMode?
   paymentReference String?
@@ -632,6 +836,7 @@ model PurchaseOrder {
   receipts GoodsReceipt[]
   awards   RfqAward[]
 
+  @@index([tenantId])
   @@index([vendorId])
   @@index([rfqId])
 }
@@ -639,7 +844,7 @@ model PurchaseOrder {
 // Ordered line on a purchase order (mirrors a QuoteLine).
 model POItem {
   id        Int           @id @default(autoincrement())
-  poId      String
+  poId      Int
   po        PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
   itemName  String
   qty       Float
@@ -650,9 +855,9 @@ model POItem {
 
 // Goods Receipt Note — one delivery event against a PO (a PO may have several).
 model GoodsReceipt {
-  id    Int               @id @default(autoincrement())
-  poId  String
-  po    PurchaseOrder     @relation(fields: [poId], references: [id], onDelete: Cascade)
+  id    Int                @id @default(autoincrement())
+  poId  Int
+  po    PurchaseOrder      @relation(fields: [poId], references: [id], onDelete: Cascade)
   date  String
   note  String?
   lines GoodsReceiptLine[]
@@ -675,31 +880,36 @@ model GoodsReceiptLine {
 // Tax / GST — compliance ledger, period locks, cash & credit ledgers, RCM, ITC-04
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Per-document compliance state. The id is the document key the app uses, which
-// may be a plain doc id (INV-2001, PO-1001) or a prefixed key for the TDS sub-
-// ledgers (tdsp:PO-1003 = TDS payable, tdsr:INV-2001 = TDS receivable). Because
-// the key is polymorphic, it is not a foreign key.
+// Per-document compliance state. docKey is the polymorphic document identifier
+// used by the app (e.g. "INV-2001", "PO-1001", "tdsp:PO-1003"). It is not a
+// foreign key — cross-tenant validity must be enforced at the application layer.
 model ComplianceRecord {
-  id           String  @id
+  id           Int     @id @default(autoincrement())
+  tenantId     String
+  tenant       Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  docKey       String  // polymorphic document reference (app-layer FK only)
   gstr1Filed   Boolean @default(false)
-  gstr1Ref     String? // GSTR-1 ARN / return ref
-  gstr1Period  String? // return period reported in (YYYY-MM)
-  gstr1Held    Boolean @default(false) // deliberately excluded from GSTR-1
+  gstr1Ref     String?
+  gstr1Period  String?
+  gstr1Held    Boolean @default(false)
   itcClaimed   Boolean @default(false)
-  itcRef       String? // GSTR-3B ref
-  itcPeriod    String? // GSTR-3B period ITC claimed in (YYYY-MM)
-  itcHeld      Boolean @default(false) // deliberately not claimed
+  itcRef       String?
+  itcPeriod    String?
+  itcHeld      Boolean @default(false)
   tdsDeposited Boolean @default(false)
-  challanNo    String? // CIN of the TDS deposit challan
+  challanNo    String?
   tdsCertified Boolean @default(false)
-  certNo       String? // Form 16A certificate number
+  certNo       String?
 
   trail ComplianceTrailEvent[]
+
+  @@unique([tenantId, docKey])
+  @@index([tenantId])
 }
 
 model ComplianceTrailEvent {
   id       Int              @id @default(autoincrement())
-  recordId String
+  recordId Int
   record   ComplianceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
   ts       String
   event    String
@@ -710,66 +920,88 @@ model ComplianceTrailEvent {
 
 // Period-level GSTR-1 filing & lock.
 model Gstr1Filing {
-  period String @id // YYYY-MM
-  date   String
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period   String
+  date     String
+
+  @@id([tenantId, period])
 }
 
 // Electronic Cash Ledger entry (signed per head: deposits +, settlements −).
 model CashLedgerEntry {
-  id     Int           @id @default(autoincrement())
-  date   String
-  kind   CashEntryKind
-  ref    String? // challan CIN (deposit) or return period (settlement)
-  period String? // settlement return period
-  igst   Float         @default(0)
-  cgst   Float         @default(0)
-  sgst   Float         @default(0)
+  id       Int           @id @default(autoincrement())
+  tenantId String
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  date     String
+  kind     CashEntryKind
+  ref      String?
+  period   String?
+  igst     Float         @default(0)
+  cgst     Float         @default(0)
+  sgst     Float         @default(0)
+
+  @@index([tenantId])
 }
 
 // A filed & locked GSTR-3B return (cash paid per head for the period).
 model FiledReturn3B {
-  period String @id // YYYY-MM
-  igst   Float
-  cgst   Float
-  sgst   Float
-  date   String
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period   String
+  igst     Float
+  cgst     Float
+  sgst     Float
+  date     String
+
+  @@id([tenantId, period])
 }
 
 // Electronic Credit (ITC) Ledger entry (signed: accrual +, utilisation −).
 model CreditLedgerEntry {
-  id     Int             @id @default(autoincrement())
-  date   String
-  kind   CreditEntryKind
-  ref    String? // return period or note
-  period String?
-  igst   Float           @default(0)
-  cgst   Float           @default(0)
-  sgst   Float           @default(0)
+  id       Int             @id @default(autoincrement())
+  tenantId String
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  date     String
+  kind     CreditEntryKind
+  ref      String?
+  period   String?
+  igst     Float           @default(0)
+  cgst     Float           @default(0)
+  sgst     Float           @default(0)
+
+  @@index([tenantId])
 }
 
 // Reverse-charge (RCM) inward supply — the clinic self-pays GST.
 model RcmInwardSupply {
   id         Int     @id @default(autoincrement())
+  tenantId   String
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   date       String
-  period     String // YYYY-MM
+  period     String
   fy         String
   supplier   String
   desc       String
-  code       String // HSN/SAC
-  rate       Float // GST %
+  code       String
+  rate       Float
   taxable    Float
   cgst       Float   @default(0)
   sgst       Float   @default(0)
   igst       Float   @default(0)
   tax        Float
   interState Boolean @default(false)
+
+  @@index([tenantId])
 }
 
 // ITC-04 job-work challan — materials sent to / prosthetics received from a lab.
 model JobWorkChallan {
   challanNo    String        @id
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   date         String
-  period       String // YYYY-MM
+  period       String
   fy           String
   jobWorker    String
   itemSent     String
@@ -778,4 +1010,6 @@ model JobWorkChallan {
   qtyReceived  Float
   status       JobWorkStatus
   taxableValue Float
+
+  @@index([tenantId])
 }

@@ -73,6 +73,13 @@ CSS variables drive the entire palette. `lib/theme.ts` converts HSL (hue + satur
 | `app/globals.css` | HSL CSS custom properties, dark mode overrides, scrollbar-thin, flip-card, studio-range utilities |
 | `prisma/schema.prisma` | Complete PostgreSQL schema (not yet integrated); models mirror the lib singletons exactly |
 
+## Multi-Tenancy Rules
+
+- **RLS (issue #3):** Before shipping to production, add Supabase RLS policies on every table that carries `tenantId`, enforcing `auth.jwt() ->> 'tenantId' = tenantId` (or a service-role bypass) so isolation holds below the application layer.
+- **Cross-entity FK consistency (issue #4):** The DB cannot enforce that `Appointment.patientId`, `Appointment.providerId`, etc. all belong to the same tenant — verify same-tenant ownership in application code on every create and update that crosses domain models.
+- **System role name uniqueness (issue #5):** `@@unique([tenantId, name])` on `Role` treats each `NULL` tenantId as distinct in Postgres, so duplicate system role names are possible; add a partial unique index (`WHERE "tenantId" IS NULL`) via a raw Prisma migration before seeding system roles.
+- **ComplianceRecord.docKey validation (issue #7):** `docKey` is a polymorphic app-layer key with no DB foreign key — always resolve it through a query scoped to the same `tenantId` to prevent cross-tenant reads.
+
 ## Adding a New Feature
 
 1. Add types and CRUD helpers to the relevant `lib/*.ts` singleton.
