@@ -15,7 +15,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -233,7 +233,7 @@ model StaffInvite {
   email     String
   roleId    Int               // role pre-assigned by the inviting admin
   role      Role              @relation(fields: [roleId], references: [id])
-  invitedBy Int               // userId of the admin who sent this
+  invitedBy String            // userId of the admin who sent this
   inviter   User              @relation("SentInvites", fields: [invitedBy], references: [id])
   sentAt    String
   expiresAt String
@@ -243,26 +243,40 @@ model StaffInvite {
 }
 
 // Login identity for all staff (clinical + non-clinical).
+// Shape follows better-auth's core user model; app/RBAC fields are carried as
+// better-auth `additionalFields` (tenantId, isActive, providerId) and admin-plugin
+// fields (role, banned, banReason, banExpires).
 // A User who is also a treating dentist links to a Provider row.
 model User {
-  id           Int       @id @default(autoincrement())
-  tenantId     String
-  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id            String   @id
+  name          String
+  email         String   @unique // global — a person has one login across the platform
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  email        String
-  passwordHash String
-  isActive     Boolean   @default(true)
-  lastLoginAt  String?
-  createdAt    String
+  // App fields (better-auth additionalFields). tenantId is null for the
+  // platform-level superadmin, who belongs to no tenant.
+  tenantId String? // null = platform-level (superadmin)
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  isActive Boolean @default(true)
 
   // Optional clinical link — null for receptionists, data-entry staff, etc.
-  providerId   Int?      @unique
-  provider     Provider? @relation(fields: [providerId], references: [id])
+  providerId Int?      @unique
+  provider   Provider? @relation(fields: [providerId], references: [id])
 
-  roles        UserRole[]
-  sentInvites  StaffInvite[] @relation("SentInvites")
+  // admin plugin
+  role       String? // e.g. "superadmin" — platform-level flag checked by better-auth
+  banned     Boolean?  @default(false)
+  banReason  String?
+  banExpires DateTime?
 
-  @@unique([tenantId, email]) // email unique per tenant, not globally
+  roles       UserRole[]
+  sentInvites StaffInvite[] @relation("SentInvites")
+  sessions    Session[]
+  accounts    Account[]
+
   @@index([tenantId])
 }
 
@@ -303,7 +317,7 @@ model Permission {
 // Junction: which roles a user currently holds (a user may hold multiple).
 model UserRole {
   id       Int    @id @default(autoincrement())
-  userId   Int
+  userId   String
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   roleId   Int
   role     Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -311,6 +325,57 @@ model UserRole {
   @@unique([userId, roleId])
   @@index([userId])
   @@index([roleId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// better-auth — sessions, accounts (credential store), verification tokens.
+// These tables are owned/managed by better-auth via the Prisma adapter.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String? // admin plugin — id of the admin impersonating this session
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String? // hashed credential for email/password accounts
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@index([identifier])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
