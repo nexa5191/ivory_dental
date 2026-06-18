@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Manrope, Plus_Jakarta_Sans, Lora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme/theme-provider";
-import { PrefsProvider } from "@/components/prefs/prefs-provider";
-import { AppShell } from "@/components/shell/app-shell";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
@@ -32,11 +29,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: noFlash }} />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider>
-          <PrefsProvider>
-            <AppShell>{children}</AppShell>
-          </PrefsProvider>
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

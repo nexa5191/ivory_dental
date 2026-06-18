@@ -1,4 +1,4 @@
-import { PrismaClient } from './generated/prisma/client';
+import { PrismaClient } from './src/app/generated/prisma/client';
 import 'dotenv/config';
 
 // Configure connection pool settings in DATABASE_URL
