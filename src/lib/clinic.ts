@@ -20,7 +20,6 @@ export interface Provider {
   name: string;
   specialty: string;
   reg: string;
-  color: string; // hsl chart var hue index 1-5
 }
 
 export interface Prescription {
@@ -170,9 +169,9 @@ export const ALLERGY_OPTIONS = ["Penicillin", "Latex", "Lidocaine", "Aspirin", "
 export const CONDITION_OPTIONS = ["Diabetes", "Hypertension", "Asthma", "Pregnancy", "Bleeding disorder", "Heart disease"];
 
 const seedProviders: Provider[] = [
-  { id: "dr-1", name: "Dr. Anjali Mehta", specialty: "Endodontist", reg: "MDS-22481", color: "1" },
-  { id: "dr-2", name: "Dr. Vikram Rao", specialty: "Orthodontist", reg: "MDS-19034", color: "2" },
-  { id: "dr-3", name: "Dr. Sara Khan", specialty: "General Dentist", reg: "BDS-30912", color: "4" },
+  { id: "dr-1", name: "Dr. Anjali Mehta", specialty: "Endodontist", reg: "MDS-22481" },
+  { id: "dr-2", name: "Dr. Vikram Rao", specialty: "Orthodontist", reg: "MDS-19034" },
+  { id: "dr-3", name: "Dr. Sara Khan", specialty: "General Dentist", reg: "BDS-30912" },
 ];
 
 // Mutable singleton so newly added doctors survive across requests in dev.
@@ -197,7 +196,6 @@ export function addProvider(input: Partial<Provider>): Provider {
     name: input.name?.trim() || "New Doctor",
     specialty: input.specialty?.trim() || "General Dentist",
     reg: input.reg?.trim() || "—",
-    color: input.color || String((providers.length % 5) + 1),
   };
   providers.push(next);
   return next;

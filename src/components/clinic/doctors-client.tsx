@@ -52,13 +52,10 @@ export function DoctorsClient({ doctors }: { doctors: DoctorRow[] }) {
           const onLeaveToday = d.leaves.some((l) => l.from <= todayStr() && todayStr() <= l.to);
           return (
             <Card key={d.id} className="overflow-hidden">
-              <div className="h-1.5" style={{ background: `hsl(var(--chart-${d.color}))` }} />
+              <div className="h-1.5 bg-primary" />
               <div className="p-5">
                 <div className="flex items-center gap-3">
-                  <span
-                    className="flex size-12 items-center justify-center rounded-xl text-lg font-bold text-white"
-                    style={{ background: `hsl(var(--chart-${d.color}))` }}
-                  >
+                  <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
                     {d.name.split(" ").slice(-1)[0].slice(0, 2).toUpperCase()}
                   </span>
                   <div className="min-w-0">

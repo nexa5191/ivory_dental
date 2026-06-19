@@ -1,9 +1,17 @@
-import { listPatients, ageFromDob } from "@/lib/clinic";
+import { listPatients } from "@/lib/db/patients";
+import { ageFromDob } from "@/lib/clinic";
 import { PageHeader } from "@/components/shell/page-header";
 import { PatientsClient } from "@/components/clinic/patients-client";
 
-export default function PatientsPage() {
-  const patients = listPatients().map((p) => ({ ...p, age: ageFromDob(p.dob) }));
+export default async function PatientsPage() {
+  const raw = await listPatients();
+  const patients = raw.map((p) => ({
+    ...p,
+    id: String(p.id),
+    age: ageFromDob(p.dob),
+    toothFindings: {} as Record<number, string>,
+    treatmentPlan: [],
+  }));
 
   return (
     <div className="animate-fade-in">

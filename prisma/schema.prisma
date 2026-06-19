@@ -183,7 +183,6 @@ model Provider {
   name      String
   specialty String
   reg       String // registration / council number
-  color     String // hsl chart hue index "1".."5"
 
   appointments  Appointment[]
   prescriptions Prescription[]
