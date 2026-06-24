@@ -207,7 +207,7 @@ export function DentalChart({
                   type="checkbox"
                   checked={done}
                   onChange={(e) => setDone(e.target.checked)}
-                  className="size-4 accent-[hsl(var(--primary))]"
+                  className="size-4 accent-[var(--primary)]"
                 />
                 Done
               </label>

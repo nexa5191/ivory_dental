@@ -13,7 +13,8 @@ import { Input, Select } from "@/components/ui/input";
 import { KpiFlip } from "@/components/dashboard/kpi-flip";
 import { Money } from "@/components/ui/money";
 import { StatusBadge, TypeIcon, formatTime } from "@/components/clinic/appt-status";
-import { formatDate as fmtDate, cn } from "@/lib/utils";
+import { formatDate as fmtDate } from "@/lib/formattingUtils";
+import { cn } from "@/lib/utils";
 
 interface PatientLite {
   id: string;

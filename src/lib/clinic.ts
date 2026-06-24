@@ -56,8 +56,8 @@ export interface Visit {
 export interface Patient {
   id: string;
   name: string;
-  dob: string;
-  anniversary?: string; // wedding anniversary
+  dob: Date;
+  anniversary?: Date; // wedding anniversary
   gender: Gender;
   phone: string;
   email: string;
@@ -67,7 +67,7 @@ export interface Patient {
   allergies: string[];
   conditions: string[];
   balance: number; // USD outstanding
-  lastVisit: string;
+  lastVisit: Date;
   toothFindings: Record<number, ToothStatus>;
   treatmentPlan: TreatmentItem[];
   xrays?: XrayImage[];

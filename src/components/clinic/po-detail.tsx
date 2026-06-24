@@ -333,7 +333,7 @@ function ReceiveForm({
           type="checkbox"
           checked={hasFree}
           onChange={(e) => setHasFree(e.target.checked)}
-          className="size-4 accent-[hsl(var(--primary))]"
+          className="size-4 accent-[var(--primary)]"
         />
         Vendor gave free / bonus stock
         <span className="font-normal text-muted-foreground">— adds to stock, not billed</span>
@@ -626,7 +626,7 @@ export function ManualPurchaseSheet({
 
         {invoiceNumber.trim() && (
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={pay} onChange={(e) => setPay(e.target.checked)} className="size-4 accent-[hsl(var(--primary))]" />
+            <input type="checkbox" checked={pay} onChange={(e) => setPay(e.target.checked)} className="size-4 accent-[var(--primary)]" />
             Mark as paid now
             {pay && (
               <Select value={payMode} onChange={(e) => setPayMode(e.target.value as POPayMode)} className="ml-auto h-8 capitalize">

@@ -480,7 +480,7 @@ export function InvoiceBuilder({
 
         <Card className="space-y-3 p-5">
           <label className="flex items-center gap-2 text-sm font-semibold">
-            <input type="checkbox" checked={attachRx} onChange={(e) => setAttachRx(e.target.checked)} className="size-4 accent-[hsl(var(--primary))]" />
+            <input type="checkbox" checked={attachRx} onChange={(e) => setAttachRx(e.target.checked)} className="size-4 accent-[var(--primary)]" />
             <Paperclip className="size-4" /> Attach prescription to PDF
           </label>
           {attachRx && (
@@ -490,7 +490,7 @@ export function InvoiceBuilder({
               ) : (
                 patientRx.map((r) => (
                   <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded-lg border p-2.5 text-sm hover:bg-accent/50">
-                    <input type="checkbox" checked={selectedRx.includes(r.id)} onChange={() => toggleRx(r.id)} className="size-4 accent-[hsl(var(--primary))]" />
+                    <input type="checkbox" checked={selectedRx.includes(r.id)} onChange={() => toggleRx(r.id)} className="size-4 accent-[var(--primary)]" />
                     <span className="flex-1">
                       {fmtDate(r.date)} · {r.providerName}
                       <span className="ml-1 text-xs text-muted-foreground">({r.items.length} drugs)</span>

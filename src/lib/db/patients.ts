@@ -3,25 +3,38 @@ import { type Gender } from "../../app/generated/prisma/client";
 
 type PatientInput = {
   name: string;
-  dob: string;
+  dob: Date;
   gender?: Gender;
   phone: string;
   email?: string;
   bloodGroup?: string;
-  lastVisit?: string;
-  anniversary?: string;
+  lastVisit?: Date;
+  anniversary?: Date;
   abhaId?: string;
   gstin?: string;
   allergies?: string[];
   conditions?: string[];
   balance?: number;
+  doctorId?: number | null;
 };
 
 export const listPatients = () =>
-  prisma.patient.findMany({ orderBy: { name: "asc" } });
+  prisma.patient.findMany({
+    include: {
+      doctor: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
 
 export const getPatient = (id: number) =>
-  prisma.patient.findUnique({ where: { id } });
+  prisma.patient.findUnique({
+    where: { id },
+    include: {
+      doctor: true,
+    },
+  });
 
 export const createPatient = (data: PatientInput) =>
   prisma.patient.create({
@@ -29,12 +42,20 @@ export const createPatient = (data: PatientInput) =>
       ...data,
       email: data.email ?? "",
       bloodGroup: data.bloodGroup ?? "",
-      lastVisit: data.lastVisit ?? new Date().toISOString().slice(0, 10),
+      lastVisit: data.lastVisit ?? new Date(),
     },
   });
 
-export const updatePatient = (id: number, data: Partial<PatientInput>) =>
-  prisma.patient.update({ where: { id }, data });
+export const updatePatient = (
+  id: number,
+  data: Partial<PatientInput>
+) =>
+  prisma.patient.update({
+    where: { id },
+    data,
+  });
 
 export const deletePatient = (id: number) =>
-  prisma.patient.delete({ where: { id } });
+  prisma.patient.delete({
+    where: { id },
+  });

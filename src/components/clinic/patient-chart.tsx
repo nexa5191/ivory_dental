@@ -1281,7 +1281,7 @@ function BillTreatmentSheet({
                 type="checkbox"
                 checked={!!sel[t.id]}
                 onChange={(e) => setSel((p) => ({ ...p, [t.id]: e.target.checked }))}
-                className="size-4 accent-[hsl(var(--primary))]"
+                className="size-4 accent-[var(--primary)]"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{t.procedure}</p>

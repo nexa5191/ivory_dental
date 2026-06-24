@@ -15,7 +15,20 @@ import { ChipSelect } from "./chip-select";
 import { GstinAutofill } from "@/components/clinic/gst-autofill";
 import { relativeTime } from "@/lib/utils";
 
-type PatientRow = Patient & { age: number };
+type PatientRow = Patient & { age: number };  // data from server returning dob as Date, but we also want to calculate age for display
+
+// form inputs on client side require some fields to be strings (like dob) for easier handling, so we define a separate type for that
+type PatientForm = {      
+  name: string;
+  dob: string;
+  gender: Patient["gender"];
+  phone: string;
+  email: string;
+  bloodGroup: string;
+  gstin?: string;
+  allergies: string[];
+  conditions: string[];
+};
 
 export function PatientsClient({ initial }: { initial: PatientRow[] }) {
   const router = useRouter();
@@ -31,11 +44,11 @@ export function PatientsClient({ initial }: { initial: PatientRow[] }) {
       p.email.toLowerCase().includes(q.toLowerCase())
   );
 
-  async function save(form: Partial<Patient>) {
+  async function save(form: PatientForm) {
     const res = await fetch("/api/patients", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, dob: new Date(form.dob)})
     });
     const saved: Patient = await res.json();
     setPatients((prev) => [{ ...saved, age: 0 }, ...prev]);
@@ -117,7 +130,7 @@ export function PatientsClient({ initial }: { initial: PatientRow[] }) {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{relativeTime(p.lastVisit)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.lastVisit.toLocaleDateString("en-IN")}</td>
                   <td className="px-4 py-3 text-muted-foreground/40">
                     <ChevronRight className="size-4" />
                   </td>
@@ -140,9 +153,9 @@ function AddPatientSheet({
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (f: Partial<Patient>) => void;
+  onSave: (f: PatientForm) => void;
 }) {
-  const [form, setForm] = React.useState<Partial<Patient>>({
+  const [form, setForm] = React.useState<PatientForm>({
     name: "",
     dob: "",
     gender: "M",
@@ -152,7 +165,7 @@ function AddPatientSheet({
     allergies: [],
     conditions: [],
   });
-  const set = (patch: Partial<Patient>) => setForm((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<PatientForm>) => setForm((f) => ({ ...f, ...patch }));
 
   return (
     <Sheet
@@ -179,7 +192,11 @@ function AddPatientSheet({
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Date of birth</span>
-            <Input type="date" value={form.dob ?? ""} onChange={(e) => set({ dob: e.target.value })} />
+            <Input
+              type="date"
+              value={form.dob}
+              onChange={(e) => set({ dob: e.target.value })}
+            />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Gender</span>

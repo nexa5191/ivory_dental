@@ -14,7 +14,7 @@ import {
 } from "recharts";
 
 const axis = {
-  stroke: "hsl(var(--muted-foreground))",
+  stroke: "var(--muted-foreground)",
   fontSize: 12,
   tickLine: false,
   axisLine: false,
@@ -23,14 +23,14 @@ const axis = {
 function tooltipStyle() {
   return {
     contentStyle: {
-      background: "hsl(var(--card))",
-      border: "1px solid hsl(var(--border))",
+      background: "var(--card)",
+      border: "1px solid var(--border)",
       borderRadius: 8,
       fontSize: 12,
-      color: "hsl(var(--card-foreground))",
+      color: "var(--card-foreground)",
       boxShadow: "0 4px 12px rgb(0 0 0 / 0.1)",
     },
-    labelStyle: { color: "hsl(var(--muted-foreground))" },
+    labelStyle: { color: "var(--muted-foreground)" },
   };
 }
 
@@ -40,11 +40,11 @@ export function ValueAreaChart({ data }: { data: { week: string; value: number }
       <AreaChart data={data} margin={{ top: 10, right: 8, left: -8, bottom: 0 }}>
         <defs>
           <linearGradient id="valueFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
         <XAxis dataKey="week" {...axis} />
         <YAxis {...axis} tickFormatter={(v) => `${Math.round(v / 1000)}k`} width={40} />
         <Tooltip
@@ -54,7 +54,7 @@ export function ValueAreaChart({ data }: { data: { week: string; value: number }
         <Area
           type="monotone"
           dataKey="value"
-          stroke="hsl(var(--primary))"
+          stroke="var(--primary)"
           strokeWidth={2.5}
           fill="url(#valueFill)"
         />
@@ -67,7 +67,7 @@ export function MoversBarChart({ data }: { data: { product: string; qty: number 
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
         <XAxis type="number" {...axis} />
         <YAxis
           type="category"
@@ -76,10 +76,10 @@ export function MoversBarChart({ data }: { data: { product: string; qty: number 
           width={110}
           tickFormatter={(v: string) => (v.length > 14 ? v.slice(0, 13) + "…" : v)}
         />
-        <Tooltip {...tooltipStyle()} cursor={{ fill: "hsl(var(--muted))" }} />
+        <Tooltip {...tooltipStyle()} cursor={{ fill: "var(--muted)" }} />
         <Bar dataKey="qty" radius={[0, 6, 6, 0]} barSize={20}>
           {data.map((_, i) => (
-            <Cell key={i} fill={`hsl(var(--chart-${(i % 5) + 1}))`} />
+            <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
           ))}
         </Bar>
       </BarChart>
@@ -94,7 +94,7 @@ export function CategoryDonut({ data }: { data: { name: string; value: number }[
     const start = (acc / total) * 360;
     acc += d.value;
     const end = (acc / total) * 360;
-    return `hsl(var(--chart-${(i % 5) + 1})) ${start}deg ${end}deg`;
+    return `var(--chart-${(i % 5) + 1}) ${start}deg ${end}deg`;
   });
   return (
     <div className="flex items-center gap-5">
@@ -112,7 +112,7 @@ export function CategoryDonut({ data }: { data: { name: string; value: number }[
           <li key={d.name} className="flex items-center gap-2">
             <span
               className="size-2.5 rounded-sm"
-              style={{ background: `hsl(var(--chart-${(i % 5) + 1}))` }}
+              style={{ background: `var(--chart-${(i % 5) + 1})` }}
             />
             <span className="text-muted-foreground">{d.name}</span>
             <span className="ml-auto font-medium tabular-nums">{d.value}</span>

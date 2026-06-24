@@ -143,7 +143,7 @@ function RegistrationCard({
           className="h-8 max-w-[200px] text-xs"
         />
         <label className="ml-auto flex cursor-pointer items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-          <input type="radio" checked={reg.primary} onChange={onMakePrimary} className="size-3.5 accent-[hsl(var(--primary))]" />
+          <input type="radio" checked={reg.primary} onChange={onMakePrimary} className="size-3.5 accent-[var(--primary)]" />
           Primary
         </label>
         {canRemove && (

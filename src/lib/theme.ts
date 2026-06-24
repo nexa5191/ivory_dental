@@ -60,11 +60,11 @@ export function applyTheme(config: ThemeConfig) {
   const isDark = root.classList.contains("dark");
   const accentL = isDark ? Math.min(lightness + 5, 70) : lightness;
 
-  root.style.setProperty("--primary", `${hue} ${saturation}% ${accentL}%`);
-  root.style.setProperty("--ring", `${hue} ${saturation}% ${accentL}%`);
+  root.style.setProperty("--primary", `hsl(${hue} ${saturation}% ${accentL}%)`);
+  root.style.setProperty("--ring", `hsl(${hue} ${saturation}% ${accentL}%)`);
   root.style.setProperty(
     "--primary-foreground",
-    accentL > 62 ? "222 47% 11%" : "0 0% 100%"
+    accentL > 62 ? "hsl(222 47% 11%)" : "hsl(0 0% 100%)"
   );
 
   // Analogous + complementary chart palette derived from the accent hue.
@@ -73,7 +73,7 @@ export function applyTheme(config: ThemeConfig) {
     const h = wrapHue(hue + off);
     const s = Math.max(saturation - i * 4, 40);
     const l = isDark ? accentL + (i % 2 === 0 ? 2 : 8) : lightness + (i % 2 === 0 ? 0 : 6);
-    root.style.setProperty(`--chart-${i + 1}`, `${h} ${s}% ${l}%`);
+    root.style.setProperty(`--chart-${i + 1}`, `hsl(${h} ${s}% ${l}%)`);
   });
 
   root.style.setProperty("--radius", `${radius / 16}rem`);

@@ -179,11 +179,14 @@ model Location {
 }
 
 model Provider {
-  id        Int    @id @default(autoincrement())
-  name      String
-  specialty String
-  reg       String // registration / council number
+  id            Int     @id @default(autoincrement())
+  name          String
+  specialty     String
+  reg           String  // registration / council number
 
+  deactivatedAt DateTime? 
+
+  patients      Patient[]
   appointments  Appointment[]
   prescriptions Prescription[]
   visits        Visit[]
@@ -193,8 +196,8 @@ model Provider {
 model Patient {
   id          Int      @id @default(autoincrement())
   name        String
-  dob         String // YYYY-MM-DD
-  anniversary String? // wedding anniversary YYYY-MM-DD
+  dob         DateTime // date of birth
+  anniversary DateTime? // wedding anniversary
   gender      Gender   @default(Other)
   phone       String
   email       String
@@ -204,7 +207,10 @@ model Patient {
   allergies   String[]
   conditions  String[]
   balance     Float    @default(0) // USD outstanding
-  lastVisit   String // ISO
+  lastVisit   DateTime // last visit timestamp
+
+  doctorId    Int?
+  doctor      Provider? @relation(fields: [doctorId], references: [id])
 
   locationId String?
   location   Location? @relation(fields: [locationId], references: [id])
@@ -218,6 +224,7 @@ model Patient {
   invoices      Invoice[]
 
   @@index([locationId])
+  @@index([doctorId])
 }
 
 // Per-tooth chart finding (FDI numbering). Replaces Patient.toothFindings map.
@@ -252,7 +259,7 @@ model XrayImage {
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   name      String
   dataUrl   String // base64 data URL (no real blob storage in the mock)
-  date      String
+  date      DateTime
   tooth     Int?
   note      String?
 
@@ -265,7 +272,7 @@ model Appointment {
   patient     Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
   providerId  Int
   provider    Provider   @relation(fields: [providerId], references: [id])
-  start       String // ISO
+  start       DateTime
   durationMin Int        @default(30)
   type        ApptType   @default(IN_CLINIC)
   status      ApptStatus @default(BOOKED)
@@ -282,7 +289,7 @@ model Prescription {
   patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   providerId     Int
   provider       Provider @relation(fields: [providerId], references: [id])
-  date           String
+  date           DateTime
   advice         String[] // free-text bullet advice
   patientName    String? // display override; defaults to patient name
   prescriberName String? // display override; defaults to provider name
@@ -314,7 +321,7 @@ model Visit {
   patient    Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   providerId Int
   provider   Provider @relation(fields: [providerId], references: [id])
-  date       String
+  date       DateTime
   complaint  String
   notes      String
 
@@ -326,7 +333,7 @@ model Invoice {
   id        String        @id // e.g. INV-2001 (app-assigned, sequential)
   patientId Int
   patient   Patient       @relation(fields: [patientId], references: [id])
-  date      String
+  date      DateTime
   total     Float // USD
   status    InvoiceStatus @default(DUE)
   mode      PayMode       @default(CASH)
@@ -357,7 +364,7 @@ model Payment {
   amount    Float // USD
   mode      PayMode
   reference String?
-  date      String
+  date      DateTime
 
   @@index([invoiceId])
 }
@@ -368,8 +375,8 @@ model TimeOff {
   id         Int      @id @default(autoincrement())
   providerId Int
   provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  from       String // YYYY-MM-DD, inclusive
-  to         String // YYYY-MM-DD, inclusive
+  from       DateTime // inclusive
+  to         DateTime // inclusive
   reason     String
   startTime  String? // HH:MM — partial-day block
   endTime    String?
@@ -431,7 +438,7 @@ model Movement {
   type      MovementType
   qty       Int
   ref       String
-  date      String // ISO
+  date      DateTime
 
   @@index([productId])
 }
@@ -446,7 +453,7 @@ model Order {
   party   String // party display name
   status  OrderStatus
   total   Float
-  date    String
+  date    DateTime
 
   lines OrderLine[]
 }
@@ -534,7 +541,7 @@ model VendorInvite {
   email     String?
   phone     String?
   note      String?
-  createdAt String
+  createdAt DateTime
   status    InviteTokenStatus @default(PENDING)
   vendorId  Int?              @unique
   vendor    Vendor?           @relation(fields: [vendorId], references: [id])
@@ -544,7 +551,7 @@ model Rfq {
   id              String         @id // e.g. RFQ-1042
   title           String
   category        VendorCategory
-  createdAt       String
+  createdAt       DateTime
   status          RfqStatus      @default(DRAFT)
   channel         Channel        @default(EMAIL)
   notes           String?
@@ -574,7 +581,7 @@ model Quote {
   rfq          Rfq     @relation(fields: [rfqId], references: [id], onDelete: Cascade)
   vendorId     Int
   vendor       Vendor  @relation(fields: [vendorId], references: [id])
-  submittedAt  String
+  submittedAt  DateTime
   total        Float // USD
   leadTimeDays Int
   validityDays Int
@@ -618,18 +625,18 @@ model PurchaseOrder {
   rfqTitle String // doubles as the PO title
   vendorId Int
   vendor   Vendor   @relation(fields: [vendorId], references: [id])
-  date     String
+  date     DateTime
   total    Float // USD
   status   POStatus @default(ISSUED)
   manual   Boolean  @default(false) // recorded directly, bypassing RFQ→PO
 
   // Single vendor invoice (inlined — a PO carries at most one)
   invoiceNumber String?
-  invoiceDate   String?
+  invoiceDate   DateTime?
   invoiceAmount Float?
 
   // Single payment (inlined)
-  paymentDate      String?
+  paymentDate      DateTime?
   paymentMode      POPayMode?
   paymentReference String?
   paymentAmount    Float?
@@ -663,7 +670,7 @@ model GoodsReceipt {
   id    Int                @id @default(autoincrement())
   poId  String
   po    PurchaseOrder      @relation(fields: [poId], references: [id], onDelete: Cascade)
-  date  String
+  date  DateTime
   note  String?
   lines GoodsReceiptLine[]
 
@@ -712,7 +719,7 @@ model ComplianceTrailEvent {
   id       Int              @id @default(autoincrement())
   recordId String
   record   ComplianceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
-  ts       String
+  ts       DateTime
   event    String
   ref      String?
 
@@ -723,14 +730,14 @@ model ComplianceTrailEvent {
 
 model Gstr1Filing {
   period String @id // YYYY-MM
-  date   String
+  date   DateTime
 }
 
 // Electronic Cash Ledger entry (signed per head: deposits +, settlements −).
 
 model CashLedgerEntry {
   id     Int           @id @default(autoincrement())
-  date   String
+  date   DateTime
   kind   CashEntryKind
   ref    String? // challan CIN (deposit) or return period (settlement)
   period String? // settlement return period
@@ -746,14 +753,14 @@ model FiledReturn3B {
   igst   Float
   cgst   Float
   sgst   Float
-  date   String
+  date   DateTime
 }
 
 // Electronic Credit (ITC) Ledger entry (signed: accrual +, utilisation −).
 
 model CreditLedgerEntry {
   id     Int             @id @default(autoincrement())
-  date   String
+  date   DateTime
   kind   CreditEntryKind
   ref    String? // return period or note
   period String?
@@ -766,7 +773,7 @@ model CreditLedgerEntry {
 
 model RcmInwardSupply {
   id         Int     @id @default(autoincrement())
-  date       String
+  date       DateTime
   period     String // YYYY-MM
   fy         String
   supplier   String
@@ -785,7 +792,7 @@ model RcmInwardSupply {
 
 model JobWorkChallan {
   challanNo    String        @id
-  date         String
+  date         DateTime
   period       String // YYYY-MM
   fy           String
   jobWorker    String

@@ -1,18 +1,60 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Stethoscope, PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV, SECONDARY_NAV, isNavActive } from "./nav-items";
+import { signOut } from "@/lib/auth-client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+    /** Controls whether the logout confirmation dialog is open */
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  
+  /** Controls loading state during logout */
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // The vendor self-service portal & registration are external surfaces — no clinic chrome.
   if (pathname.startsWith("/vendor-portal") || pathname.startsWith("/vendor-register")) return null;
+
+    // ============================================================================
+  // HANDLERS
+  // ============================================================================
+
+  /** Handle logout button click - shows confirmation dialog */
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  /** Handle confirmed logout - closes dialog and logs out */
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+      setShowLogoutDialog(false);
+    }
+  };
+
+    /** Handle cancelled logout - just closes dialog */
+  const handleCancelLogout = () => {
+    setShowLogoutDialog(false);
+  };
 
   const isActive = (href: string) => isNavActive(pathname, href);
 
@@ -89,6 +131,40 @@ export function Sidebar() {
             </>
           )}
         </button>
+        <button
+          onClick={handleLogoutClick}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <span>Logout</span>
+        </button>
+
+              {/* Logout Confirmation Dialog */}
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to log out? You will need to sign in again to access your account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleCancelLogout}
+              disabled={isLoggingOut}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmLogout}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </aside>
   );

@@ -826,7 +826,7 @@ function NewRequestSheet({
                   type="checkbox"
                   checked={picked.includes(v.id)}
                   onChange={() => togglePick(v.id)}
-                  className="size-4 accent-[hsl(var(--primary))]"
+                  className="size-4 accent-[var(--primary)]"
                 />
                 <span className="flex-1">{v.name}</span>
                 <Badge variant={v.category === category ? "default" : "muted"}>{v.category}</Badge>

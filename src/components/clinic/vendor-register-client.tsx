@@ -90,7 +90,7 @@ export function VendorRegisterClient({ token, inviteEmail, invitePhone }: { toke
         {/* MSME */}
         <div className="rounded-lg border bg-muted/30 p-3">
           <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-            <input type="checkbox" checked={form.msme} onChange={(e) => set({ msme: e.target.checked })} className="size-4 rounded border-input accent-[hsl(var(--primary))]" />
+            <input type="checkbox" checked={form.msme} onChange={(e) => set({ msme: e.target.checked })} className="size-4 rounded border-input accent-[var(--primary)]" />
             We are registered under MSME (Udyam)
           </label>
           {form.msme && (

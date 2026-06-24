@@ -1,7 +1,7 @@
 export function Sparkline({
   data,
   className,
-  stroke = "hsl(var(--primary))",
+  stroke = "var(--primary)",
   fill = true,
 }: {
   data: number[];

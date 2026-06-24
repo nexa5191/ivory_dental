@@ -584,7 +584,7 @@ function VendorSheet({
               type="checkbox"
               checked={form.msme}
               onChange={(e) => set({ msme: e.target.checked })}
-              className="size-4 rounded border-input accent-[hsl(var(--primary))]"
+              className="size-4 rounded border-input accent-[var(--primary)]"
             />
             Registered under MSME (Udyam)
           </label>
@@ -638,7 +638,7 @@ function VendorSheet({
               type="checkbox"
               checked={form.tds.applicable}
               onChange={(e) => setTds({ applicable: e.target.checked })}
-              className="size-4 rounded border-input accent-[hsl(var(--primary))]"
+              className="size-4 rounded border-input accent-[var(--primary)]"
             />
             Deduct TDS on payments (Form 26Q)
           </label>

@@ -165,7 +165,7 @@ export function ColorStudio({ compact = false }: { compact?: boolean }) {
                 className="w-2.5 rounded-sm"
                 style={{
                   height: 8 + i * 5,
-                  background: `hsl(var(--chart-${i}))`,
+                  background: `var(--chart-${i})`,
                 }}
               />
             ))}
